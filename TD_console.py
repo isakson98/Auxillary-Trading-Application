@@ -137,7 +137,7 @@ def start_hot_exit(token):
 			        break
 
 			final_r_r = None
-			#getting price data, parsing/calculating the R/R, placing the trade
+			#getting price data, parsing/calculating the R/R, placing the 4trade
 			if (resp == '5'):
 			    final_r_r = fox.five_min_calc_r_r() #retriving data from the r/r class
 			elif (resp == '1'):
@@ -220,7 +220,7 @@ def start_cold_entry():
 #	3) have a function that will save a csv as a file after each run of either cold entry or hot exit
 	
 	while True:
-		entry_complete = fox.cold_entry(name_of_stock)
+		entry_complete = fox.cold_entry(name_of_stock, 0, -1)
 		if entry_complete == True:
 			break
 		time.sleep(60.0 - ((time.time() - starttime) % 60.0))
