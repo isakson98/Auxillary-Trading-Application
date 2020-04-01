@@ -111,7 +111,7 @@ def delete_opened_orders():
 #  because i am using this function also for exiting trades out of the cold entry
 #so far it only works from the start 
 # process::
-# 1.check opened orders
+# 1. check opened orders
 # 2. find out which orders are opened 
 # 3. find out what their 2r is to start hot exit only after that price 
 # 4. initiate the function in risk reward two seconds before the current candle expires
@@ -162,7 +162,7 @@ def start_hot_exit(token):
 			# start indicator 3 seconds before current minute ends
 			result = False
 			if round(time.time()) % 60 ==56:
-				result = fox.hot_exit()
+				result = fox.hot_exit(0, -1)
 			if result == True:
 				TD.deleting_one_saved_order(order_info['Order_Id']) #temp
 				TD.sending_REWARD_exit_order(final_r_r) #temp

@@ -3,6 +3,10 @@ from Risk_Reward import Risk_Reward
 from datetime import datetime
 import pandas as pd
 
+## could not figure out how to efficiently deal with data retrieval if using two files.
+## so far it seems more efficient to run the simulation in the file where all the calculations are made
+## however, I would like to track and plot the results 
+
 class Simulation_Model:
 
     def __init__(self):

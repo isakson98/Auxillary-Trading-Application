@@ -4,10 +4,10 @@
 # 3. Calculates:
 #    A. R/R (1:2) based on the entry and the lowest 5 min low of the last two candles (intraday trend)
 #    B. R/R (1:2) based on the lowest low after the high in a pullback (momentum)
-# 4. Sends a OCO (one cancels another) order
-#
-##things I am considering to change/add:
-# 1. add a trailing stop type of order based on ATR (separate file class/function) separate file and add the function to each R/R
+#    C. Hot exit 						(run through model integrated)
+#    D. Cold entry + its risk		    (run through model integrated)
+# 4. It is also capable of running simulations on intraday basis if ticker and date are specified
+
 from Finn_Hub_API_Calls import Finn_Hub_API_Calls
 from datetime import datetime
 from dateutil import parser
@@ -160,64 +160,107 @@ class Risk_Reward:
 		return self.risk_reward_setup
 
 
+	# PROGRAMMING ASPECT BEHIND THE FUNCTION:
+	#this is a multipurpose function
+	#used for simulation and live trading as well
+	#if simulation == 0 i will keep on requesting new data and make new RSI, BB, MA calculations
+	#if simulation == 1 i will only do technical indicators once.
+	#I am using a smaller dataframe for BB and MA calculations
+	#I will also employ a_iterations which will help with data access at different locations of the dataframe
+	#in live trading a_iterations should be -1 and simulation == 0
 
+	# TECHNICAL ANALYSIS ASPECT BEHIND THE FUNCTION:
 	# this function calculates the last candle's technical indicators and its body composition to determine whether it is oversold and I need to exit
 	# finding the candles that when they are oversold, they have a small probability of going up
 	#process behind it -> keep indicators overextended but not too much. 
 	#instead add more different specifications to have more accurate results
-	def hot_exit(self):
+	def hot_exit(self, simulation, a_iteration):
 
-		data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
+		# this will be used either by realtime or simulation
+		data_pd_shorty = None
 
-		# if the price has not reached 2X Reward, oversold != need to exit
-		if data_pd['Close'].iloc[-1] < self.risk_reward_setup['reward']:
-			return False
+		#initializing in scope, so I can access later
+		data_pd_short = None
 
-		###figure out how to reduce the redundancy of doing the same calculations, especially rsi
-		# create a smaller df of the last 25 to calculate BB and bb20 and sma, to avoid inefficiency
-		data_pd_short = data_pd.tail(25).copy()  
-		#library.file.class instance declaration
-		indicator_bb = ta.volatility.BollingerBands(close=data_pd_short["Close"], n=7, ndev=2)
-		data_pd_short['bb_bbh'] = round(indicator_bb.bollinger_hband(),2)
-		#print(data_pd_short['bb_bbh'].tail(10))
+		# keeping these separate becasuse I am creating local smaller dataframes for real time trading to increase performance
+		if simulation == 0:
+			self.data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
 
-		indicator_bb = ta.volatility.BollingerBands(close=data_pd["Close"], n=20, ndev=2)
-		data_pd_short['bb_bbh20'] = round(indicator_bb.bollinger_hband(),2)
-		#print(data_pd_short['bb_bbh20'].tail(10))
+			# if the price has not reached 2X Reward, oversold != need to exit
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+				return False
 
-		##RSI indicator -> very lagging, performs closer to reality 100 away from head
-		indicator_rsi = ta.momentum.RSIIndicator(close=data_pd["High"], n=7)
-		data_pd['rsiHigh'] = indicator_rsi.rsi()
-		#print(data_pd['rsiHigh'].head(100))
+			##RSI indicator -> very lagging, performs closer to reality 100 away from head
+			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["High"], n=7)
+			self.data_pd['rsiHigh'] = indicator_rsi.rsi()
 
-		##SMA indicator 
-		data_pd_short['SMA'] = data_pd_short['Close'].rolling(window=9).mean()
-		#print(data_pd['SMA'])
+			# create a smaller df of the last 25 to calculate BB and bb20 and sma, to avoid inefficiency
+			data_pd_short = self.data_pd.tail(25).copy()  
+			#library.file.class instance declaration
+			indicator_bb = ta.volatility.BollingerBands(close=data_pd_short["Close"], n=7, ndev=2)
+			data_pd_short['bb_bbh'] = round(indicator_bb.bollinger_hband(),2)
+
+			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=20, ndev=2)
+			data_pd_short['bb_bbh20'] = round(indicator_bb.bollinger_hband(),2)
+
+			##SMA indicator 
+			data_pd_short['SMA'] = data_pd_short['Close'].rolling(window=9).mean()
+
+
+		#not going to need to request data the first time because I'll have it from cold entry
+		#but I will calculate all technical analysis 
+		elif simulation == 1 and 'bb_bbh' not in self.data_pd.columns:
+
+			# if the price has not reached 2X Reward, oversold != need to exit
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+				return False
+
+			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=7, ndev=2)
+			self.data_pd['bb_bbh'] = round(indicator_bb.bollinger_hband(),2)
+
+			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=20, ndev=2)
+			self.data_pd['bb_bbh20'] = round(indicator_bb.bollinger_hband(),2)
+
+			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["High"], n=7)
+			self.data_pd['rsiHigh'] = indicator_rsi.rsi()
+
+			self.data_pd['SMA'] = self.data_pd['Close'].rolling(window=9).mean()
+
+
+		# to avoid repetitive calculations in simulation, I will repopulate 
+		if simulation == 0:
+			data_pd_shorty = data_pd_short.copy()
+		else:
+			data_pd_shorty = self.data_pd[a_iteration - 2 : a_iteration + 1].copy()
+
+
 
 		##using dicts to avoid calling the last element of a big array using iloc (inefficient)
-		current = {'Close' : data_pd['Close'].iloc[-1],
-					'High': data_pd['High'].iloc[-1], 
-					'Low': data_pd['Low'].iloc[-1], 
-					'Open': data_pd['Open'].iloc[-1],
-					'Timestamp': data_pd['Timestamp'].iloc[-1],
-					'Volume' : data_pd['Volume'].iloc[-1],
-					'rsiHigh' : data_pd['rsiHigh'].iloc[-1],
-					'bb_bbh' : data_pd_short['bb_bbh'].iloc[-1],
-					'bb_bbh20' :data_pd_short['bb_bbh20'].iloc[-1],
-					'SMA' :data_pd_short['SMA'].iloc[-1]
+		#for the last 3 I am using the last element in either of the shortened lists
+		current = {'Close' : self.data_pd['Close'].iloc[a_iteration],
+					'High': self.data_pd['High'].iloc[a_iteration], 
+					'Low': self.data_pd['Low'].iloc[a_iteration], 
+					'Open': self.data_pd['Open'].iloc[a_iteration],
+					'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration],
+					'Volume' : self.data_pd['Volume'].iloc[a_iteration],
+					'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration],
+					'bb_bbh' : data_pd_shorty['bb_bbh'].iloc[-1],
+					'bb_bbh20' :data_pd_shorty['bb_bbh20'].iloc[-1],
+					'SMA' :data_pd_shorty['SMA'].iloc[-1]
 		}
 
-		prev = {'Close' : data_pd['Close'].iloc[-2],
-				'High': data_pd['High'].iloc[-2], 
-				'Low': data_pd['Low'].iloc[-2], 
-				'Open': data_pd['Open'].iloc[-2],
-				'Timestamp': data_pd['Timestamp'].iloc[-2],
-				'Volume' : data_pd['Volume'].iloc[-2],
-				'rsiHigh' : data_pd['rsiHigh'].iloc[-2],
-				'bb_bbh' : data_pd_short['bb_bbh'].iloc[-2],
-				'bb_bbh20' : data_pd_short['bb_bbh20'].iloc[-2],
-				'SMA' : data_pd_short['SMA'].iloc[-2]
+		prev = {'Close' : self.data_pd['Close'].iloc[a_iteration-1],
+				'High': self.data_pd['High'].iloc[a_iteration-1], 
+				'Low': self.data_pd['Low'].iloc[a_iteration-1], 
+				'Open': self.data_pd['Open'].iloc[a_iteration-1],
+				'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration-1],
+				'Volume' : self.data_pd['Volume'].iloc[a_iteration-1],
+				'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration-1],
+				'bb_bbh' : data_pd_shorty['bb_bbh'].iloc[-2],
+				'bb_bbh20' : data_pd_shorty['bb_bbh20'].iloc[-2],
+				'SMA' : data_pd_shorty['SMA'].iloc[-2]
 		}
+
 
 		###store the last element in a dictionary object to avoid calling back this big df
 		##candles
@@ -248,38 +291,54 @@ class Risk_Reward:
 		# any one of these conditions is a good reason to exit, I do need to wait for all of them to finish
 		## bb, rsi, candle combos 
 		middle_out_bb = (candle_middle > current['bb_bbh20']) and (current['rsiHigh'] >= 85) and smaller_body
-		if middle_out_bb : return True
-		print(middle_out_bb)
+		if middle_out_bb : 
+			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
+			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			return True
 
 		big_green_but_low_vol_and_rsi = (current['rsiHigh'] >=80) and volume_low_price_high and current['High'] >= prev['High'] and smaller_body
-		if big_green_but_low_vol_and_rsi : return True
-		print(big_green_but_low_vol_and_rsi)
+		if big_green_but_low_vol_and_rsi : 
+			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
+			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			return True
 
 		bb_and_sum_prev_wick_rsi = (current['High'] >= current['bb_bbh']) and sum_prev_wick_rsi and smaller_body
-		if bb_and_sum_prev_wick_rsi : return True
-		print(bb_and_sum_prev_wick_rsi)
+		if bb_and_sum_prev_wick_rsi : 
+			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
+			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			return True
 
 		bb_and_current_wick_rsi = wick_and_rsi_high and extended_from_sma and smaller_body
-		if bb_and_current_wick_rsi : return True
-		print(bb_and_current_wick_rsi)
+		if bb_and_current_wick_rsi : 
+			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
+			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			return True
+			
 
 		bb_and_current_wick_rsi_out = wick_and_rsi_high and (current['High'] >= current['bb_bbh']) and smaller_body
-		if bb_and_current_wick_rsi_out : return True
-		print(bb_and_current_wick_rsi_out)
+		if bb_and_current_wick_rsi_out : 
+			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
+			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			return True
+			
 
 		
-		# 4.(optional) construct a websocket to get latest bid and asks
-		return 0
+		return False
 
 
 
-	#this is a multipurpose function
-	#used for simujlation and live trading as well
+	# PROGRAMMING ASPECT BEHIND THE FUNCTION:
 	#if simulation == 0 i will keep on requesting new data and make new RSI and MACD calculations
 	#if simulation == 1 i will only do the RSI and MACD Calculations once for the whole data set and NOT request new data each turn
 	#I will also employ a_iterations which will help with data access at different locations of the dataframe
 	#in live trading a_iterations should be -1 and sim == 0
 	#in trading it will be growing in the loop wherever this function is called
+
+	# TECHNICAL ANALYSIS ASPECT BEHIND THE FUNCTION:
+	# I am calculating MACD histogram fields. I want to enter in a red field that has a closer candle to 0 than previous,
+	# and I want this previous candle to be smaller than the highest candle of the previous green field (in absolute terms)
+	# At the same time, I want rsi to be lower than 67.5, so I am not buying something overextended, despite macd 
+
 	def cold_entry(self, ticker, simulation, a_iteration):
 
 		self.open_order_info['ticker'] = ticker
@@ -346,9 +405,7 @@ class Risk_Reward:
 			return False
 
 		# rsi should be below 67.5 for the current candle, so I am not buying anything overextended
-		if self.data_pd['RsiClose14'].iloc[a_iteration] < 67.5:
-			rsi_pass = True
-		else:
+		if self.data_pd['RsiClose14'].iloc[a_iteration] > 67.5:
 			return False
 		
 		#at this point a candle is a suitable sign for an entry position
@@ -361,7 +418,7 @@ class Risk_Reward:
 			
 		return True
 
-	# in the case of using macd is the entry signal, the stop loss will be the lowest low in the last 15 minutes
+	# in case of using macd as the entry signal, the stop loss will be the lowest low in the last 15 minutes
 	# same case in this function, passing the starting point, same as in the cold entry function
 	# a_iteration = -1 in real time trading
 	def cold_entry_risk_reward(self, a_iteration):
@@ -384,10 +441,12 @@ class Risk_Reward:
 								'shares' : shares, 
 								'ticker' : self.open_order_info['ticker']}
 
-		print("R/R based on entry: ", self.risk_reward_setup )
+		print("R/R based on entry: ", self.risk_reward_setup, self.data_pd['Timestamp'].iloc[a_iteration] )
 
 		return True
-	#not safe against DAY TIME SAVINGS and HALTS
+
+
+	#not safe against DAY TIME SAVINGS and HALTS ??
 	#this function iterates through every minute of a specified stock between 9:30 (+some pre market) and 13:00
 	#and records cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
 	#this is a powerful function because it should accomodate every strategy I map out for any stock
@@ -418,20 +477,19 @@ class Risk_Reward:
 
 		
 		while start_time != finish_time: 
+			self.hot_exit(1, start_time)
 			self.cold_entry(self.open_order_info['ticker'], 1, start_time)
 			start_time +=1
+
+		return 0
 			
-					
-		iterations = 0
-		for yes in self.data_pd['Cold Entry']:
-			#print(yes)
-			if yes == 1:
-				print(self.data_pd['Timestamp'].iloc[iterations])
-			iterations+=1
 
 
 	## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
-	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
 	## make it possible to look at two stocks at the same time (more than one) threading?
 	## build a simulation class in which you can see your entries and exits on a graph and a print out results
-	## build a class that will feautre the highest sentiment stocks that are trending on StockTwits using their API
+	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
+
+	## multithreading -> build a GUI with two terminal windows which allow to have to processes at the same time
+	## easy level would be to allow two threads to work on two different files (sentiment screener and cold entry)
+	## medium level would be allowing two cold entries (I would need to create two object of the same file, obv)

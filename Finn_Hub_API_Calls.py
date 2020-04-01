@@ -161,6 +161,5 @@ class Finn_Hub_API_Calls:
 		content = requests.get(url = endpoint, params = payload)
 
 		day = content.json()
-		#print(day)
 
 		return day
