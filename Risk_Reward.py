@@ -304,7 +304,6 @@ class Risk_Reward:
 		# will iterate through one negative macd before my test candle (which is supposed to be the start of green field) and one positive macd before that
 		# i want to see the highest bar in green to be higher than the lowest bar in red (absolute value)
 		iterations_v2 = a_iteration
-		iterations =  a_iteration - 1 #going to start interating from the previous candle, before test candle
 		lowest_macd = 0.000 #this will remain 0.00 in case the previous
 		highest_macd = -0.001
 		
@@ -375,15 +374,15 @@ class Risk_Reward:
 				lowest_low = candle
 			iterations += 1
 
-		risk = lowest_low - 0.03
-		reward = self.data_pd['High'].iloc[iterations-1] + ((self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
+		risk = round(lowest_low - 0.03, 2)
+		reward = round(self.data_pd['High'].iloc[a_iteration] + ((self.data_pd['High'].iloc[a_iteration] - lowest_low) * 2), 2)
 
-		shares = round(Money_to_Risk / (self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
+		shares = round(Money_to_Risk / (self.data_pd['High'].iloc[a_iteration] - lowest_low) * 2)
 
 		self.risk_reward_setup ={'risk': risk,
-									'reward' : reward, 
-									'shares' : shares, 
-									'ticker' : self.open_order_info['ticker']}
+								'reward' : reward, 
+								'shares' : shares, 
+								'ticker' : self.open_order_info['ticker']}
 
 		print("R/R based on entry: ", self.risk_reward_setup )
 
@@ -393,14 +392,14 @@ class Risk_Reward:
 	#and records cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
 	#this is a powerful function because it should accomodate every strategy I map out for any stock
 	#this would allow me to see results of my strategy in the past (past 30 day limit which TradingView imposes)
-	def run_through_model(self):
+	def run_through_model(self, name, date):
 		#specifying the start time (seconds, which backtracks a hundred candles and a whole day) 
 		# beware of the GMT TIME DIFFERENCE SAVINGS LIGHT
-		dates = pd.to_datetime(['2020-03-31'])
+		dates = pd.to_datetime([date])
 		second = (dates - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s') 
 		
 		self.open_order_info['time'] = second[0] + 48600
-		self.open_order_info['ticker'] = "NCLH"
+		self.open_order_info['ticker'] = name
 		
 		self.data_pd = self.FH_connect.one_min_data_simulation(self.open_order_info)
 		

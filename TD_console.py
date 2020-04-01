@@ -215,11 +215,8 @@ def start_cold_entry():
 	# you subtract how much is left before the next time it should ran in that sequence
 	# start the loop only when the current seconds 
 
-# ^ 1) create a dataframe especially for cold entries and hot exits as self variable (store as a dictionary?)
-#	2) keep track of the time as well ( preferably in UNIX seconds, have a column for a converted time as well)
-#	3) have a function that will save a csv as a file after each run of either cold entry or hot exit
-	
 	while True:
+		# simulation == 0 (not simulation), and -1 = index of current candle (last one in the df)
 		entry_complete = fox.cold_entry(name_of_stock, 0, -1)
 		if entry_complete == True:
 			break
@@ -227,6 +224,7 @@ def start_cold_entry():
 
 
 	final_r_r = fox.risk_reward_setup
+
 	# send a buy market order to buy immidiately
 	#TD.sending_cold_ENTRY_order(final_r_r) temp
 
@@ -236,8 +234,8 @@ def start_cold_entry():
 
 	# the final step of cold entry strategy is finding an exit 
 	# think whether I want to implement 
-
 	#start_hot_exit(1) temp
+
 	return 0
 
 
@@ -252,6 +250,16 @@ def repeat_trending_stocks():
 	except:
 		print("Exiting viewing trending stocks")
 
+def model_init():
+
+	print("Enter ticker symbol: ")
+	name = input()
+
+	print("Enter date to analyze (yyyy-mm-dd'): ")
+	date = input()
+
+	fox.run_through_model(name, date)
+
 
 
 while True:
@@ -263,6 +271,7 @@ while True:
 	print("[3] - Start hot exit")
 	print("[4] - Start cold entry")
 	print("[5] - See trending stocks") ## works without a problem
+	print("[6] - Run simulation model") ## works without a problem
 	print("[10] - Find risk order ID")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
@@ -280,6 +289,8 @@ while True:
 		start_cold_entry()
 	elif decision == '5':
 		repeat_trending_stocks()
+	elif decision == '6':
+		model_init()
 	elif decision == '10':
 		find_risk_exit_order_id()
 	elif decision == 'q':
