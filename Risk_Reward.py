@@ -112,9 +112,9 @@ class Risk_Reward:
 		target = round((self.open_order_info['price'] + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
 
 		self.risk_reward_setup = {'risk' : five_min_stop_loss, 
-		                          'reward' : target, 
-		                          'shares' : int(self.open_order_info['shares']), 
-		                          'ticker' : self.open_order_info['ticker']}
+									'reward' : target, 
+									'shares' : int(self.open_order_info['shares']), 
+									'ticker' : self.open_order_info['ticker']}
 
 		print("Calculated 5 min R/R:  ",  self.risk_reward_setup)
 		return self.risk_reward_setup
@@ -152,9 +152,9 @@ class Risk_Reward:
 		reward = round(((test_high - risk) * 2) + test_high, 2)
 
 		self.risk_reward_setup = {'risk' : risk, 
-		                          'reward' : reward, 
-		                          'shares' : self.open_order_info['shares'], 
-		                          'ticker' : self.open_order_info['ticker']}
+									'reward' : reward, 
+									'shares' : self.open_order_info['shares'], 
+									'ticker' : self.open_order_info['ticker']}
 
 		print("Calculated 1 min R/R: ", self.risk_reward_setup)
 		return self.risk_reward_setup
@@ -196,27 +196,27 @@ class Risk_Reward:
 
 		##using dicts to avoid calling the last element of a big array using iloc (inefficient)
 		current = {'Close' : data_pd['Close'].iloc[-1],
-		           'High': data_pd['High'].iloc[-1], 
-		           'Low': data_pd['Low'].iloc[-1], 
-		           'Open': data_pd['Open'].iloc[-1],
-		           'Timestamp': data_pd['Timestamp'].iloc[-1],
-		           'Volume' : data_pd['Volume'].iloc[-1],
-		           'rsiHigh' : data_pd['rsiHigh'].iloc[-1],
-		           'bb_bbh' : data_pd_short['bb_bbh'].iloc[-1],
-		           'bb_bbh20' :data_pd_short['bb_bbh20'].iloc[-1],
-		           'SMA' :data_pd_short['SMA'].iloc[-1]
+					'High': data_pd['High'].iloc[-1], 
+					'Low': data_pd['Low'].iloc[-1], 
+					'Open': data_pd['Open'].iloc[-1],
+					'Timestamp': data_pd['Timestamp'].iloc[-1],
+					'Volume' : data_pd['Volume'].iloc[-1],
+					'rsiHigh' : data_pd['rsiHigh'].iloc[-1],
+					'bb_bbh' : data_pd_short['bb_bbh'].iloc[-1],
+					'bb_bbh20' :data_pd_short['bb_bbh20'].iloc[-1],
+					'SMA' :data_pd_short['SMA'].iloc[-1]
 		}
 
 		prev = {'Close' : data_pd['Close'].iloc[-2],
-		        'High': data_pd['High'].iloc[-2], 
-		        'Low': data_pd['Low'].iloc[-2], 
-		        'Open': data_pd['Open'].iloc[-2],
-		        'Timestamp': data_pd['Timestamp'].iloc[-2],
-		        'Volume' : data_pd['Volume'].iloc[-2],
-		        'rsiHigh' : data_pd['rsiHigh'].iloc[-2],
-		        'bb_bbh' : data_pd_short['bb_bbh'].iloc[-2],
-		        'bb_bbh20' : data_pd_short['bb_bbh20'].iloc[-2],
-		        'SMA' : data_pd_short['SMA'].iloc[-2]
+				'High': data_pd['High'].iloc[-2], 
+				'Low': data_pd['Low'].iloc[-2], 
+				'Open': data_pd['Open'].iloc[-2],
+				'Timestamp': data_pd['Timestamp'].iloc[-2],
+				'Volume' : data_pd['Volume'].iloc[-2],
+				'rsiHigh' : data_pd['rsiHigh'].iloc[-2],
+				'bb_bbh' : data_pd_short['bb_bbh'].iloc[-2],
+				'bb_bbh20' : data_pd_short['bb_bbh20'].iloc[-2],
+				'SMA' : data_pd_short['SMA'].iloc[-2]
 		}
 
 		###store the last element in a dictionary object to avoid calling back this big df
@@ -243,7 +243,7 @@ class Risk_Reward:
 
 		#sma from BB
 		extended_from_sma = (abs(current['High'] - current['Low']) < (current['Low'] - current['SMA']))
-		            
+					
 
 		# any one of these conditions is a good reason to exit, I do need to wait for all of them to finish
 		## bb, rsi, candle combos 
@@ -282,117 +282,157 @@ class Risk_Reward:
 	#in trading it will be growing in the loop wherever this function is called
 	def cold_entry(self, ticker, simulation, a_iteration):
 
-	    self.open_order_info['ticker'] = ticker
-	    
-	    #if I am doing real time trading, I need to request data every time I use this function 
-	    if simulation == 0:
-	        self.data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
+		self.open_order_info['ticker'] = ticker
+		
+		#if I am doing real time trading, I need to request data every time I use this function 
+		if simulation == 0:
+			self.data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
 
-	    #only need to collect this data once for simulation. It will be saved from then on
-	    #Either live or simulation -> both need to access these indicator calculations
-	    if simulation == 0 or (simulation == 1 and 'Macd' not in self.data_pd.columns):
-	        #macd
-	        indicator_macd = ta.trend.MACD(close=self.data_pd["Close"], n_slow = 26, n_fast = 12, n_sign = 9)
-	        #print(indicator_macd)
-	        self.data_pd['Macd'] = round(indicator_macd.macd_diff(),3)
+		#only need to collect this data once for simulation. It will be saved from then on
+		#Either live or simulation -> both need to access these indicator calculations
+		if simulation == 0 or (simulation == 1 and 'Macd' not in self.data_pd.columns):
+			#macd
+			indicator_macd = ta.trend.MACD(close=self.data_pd["Close"], n_slow = 26, n_fast = 12, n_sign = 9)
+			#print(indicator_macd)
+			self.data_pd['Macd'] = round(indicator_macd.macd_diff(),3)
 
-	        ##RSI indicator
-	        indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
-	        self.data_pd['RsiClose14'] = indicator_rsi.rsi()
-	        
+			##RSI indicator
+			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
+			self.data_pd['RsiClose14'] = indicator_rsi.rsi()
+			
 
-	    # will iterate through one negative macd before my test candle (which is supposed to be the start of green field) and one positive macd before that
-	    # i want to see the highest bar in green to be higher than the lowest bar in red (absolute value)
-	    iterations_v2 = a_iteration
-	    iterations =  a_iteration - 1 #going to start interating from the previous candle, before test candle
-	    lowest_macd = 0.000 #this will remain 0.00 in case the previous
-	    highest_macd = -0.001
-	    
-	    #BASIC GIST OF THINGS -> 
-	    #iterating while current is in red and less then the previous candle (sign of strength)
-	    #comparing to the previous green field
-	    #the current histogram bar has to be red
-	    if self.data_pd['Macd'].iloc[iterations_v2] > 0.000:
-	        return False
-	    
-	    
-	    #if current higher than prev and prev is lower than prevprev
-	    cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] and self.data_pd['Macd'].iloc[iterations_v2] <= 0.000
-	    cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] and self.data_pd['Macd'].iloc[iterations_v2 -1] < 0.000
-	    cond3 = self.data_pd['Macd'].iloc[iterations_v2 - 2] < 0.000
-	    
-	    if cond1 and cond2 and cond3:
-	            lowest_macd = self.data_pd['Macd'].iloc[iterations_v2 - 1]
-	    else:
-	        return False
-	    
-	    #comparing in the red histogram field the current bar to the previous
-	    while self.data_pd['Macd'].iloc[iterations_v2] <= 0.000:
-	        #if in the same red field the current is closer to 0 then prev- > not interested 
-	        if self.data_pd['Macd'].iloc[iterations_v2] < lowest_macd:
-	            return False
-	        iterations_v2 -= 1
-	        
-	    #keeping the same counter to start iterating through the green field
-	    #going through green, previous to the red field
-	    while self.data_pd['Macd'].iloc[iterations_v2] >= 0.000:
-	        if self.data_pd['Macd'].iloc[iterations_v2] > highest_macd:
-	            highest_macd = self.data_pd['Macd'].iloc[iterations_v2]
-	        iterations_v2 -=1 
+		# will iterate through one negative macd before my test candle (which is supposed to be the start of green field) and one positive macd before that
+		# i want to see the highest bar in green to be higher than the lowest bar in red (absolute value)
+		iterations_v2 = a_iteration
+		iterations =  a_iteration - 1 #going to start interating from the previous candle, before test candle
+		lowest_macd = 0.000 #this will remain 0.00 in case the previous
+		highest_macd = -0.001
+		
+		#BASIC GIST OF THINGS -> 
+		#iterating while current is in red and less then the previous candle (sign of strength)
+		#comparing to the previous green field
+		#the current histogram bar has to be red
+		if self.data_pd['Macd'].iloc[iterations_v2] > 0.000:
+			return False
+		
+		
+		#if current higher than prev and prev is lower than prevprev
+		cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] and self.data_pd['Macd'].iloc[iterations_v2] <= 0.000
+		cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] and self.data_pd['Macd'].iloc[iterations_v2 -1] < 0.000
+		cond3 = self.data_pd['Macd'].iloc[iterations_v2 - 2] < 0.000
+		
+		if cond1 and cond2 and cond3:
+				lowest_macd = self.data_pd['Macd'].iloc[iterations_v2 - 1]
+		else:
+			return False
+		
+		#comparing in the red histogram field the current bar to the previous
+		while self.data_pd['Macd'].iloc[iterations_v2] <= 0.000:
+			#if in the same red field the current is closer to 0 then prev- > not interested 
+			if self.data_pd['Macd'].iloc[iterations_v2] < lowest_macd:
+				return False
+			iterations_v2 -= 1
+			
+		#keeping the same counter to start iterating through the green field
+		#going through green, previous to the red field
+		while self.data_pd['Macd'].iloc[iterations_v2] >= 0.000:
+			if self.data_pd['Macd'].iloc[iterations_v2] > highest_macd:
+				highest_macd = self.data_pd['Macd'].iloc[iterations_v2]
+			iterations_v2 -=1 
 
 
-	    #if the previous green field's highest candle is smaller than the lowest candle of previous red field
-	    # I do not want to engage
-	    if abs(highest_macd) < abs(lowest_macd):
-	        return False
+		#if the previous green field's highest candle is smaller than the lowest candle of previous red field
+		# I do not want to engage
+		if abs(highest_macd) < abs(lowest_macd):
+			return False
 
-	    # rsi should be below 67.5 for the current candle, so I am not buying anything overextended
-	    if self.data_pd['RsiClose14'].iloc[a_iteration] < 67.5:
-	        rsi_pass = True
-	    else:
-	        return False
-	    
-	    #at this point a candle is a suitable sign for an entry position
-	    #keeping track of cold entries (for simulation purposes)
-	    if simulation == 1:
-	        self.data_pd.loc[a_iteration, 'Cold Entry'] = 1
-	    
-	    #start the risk/reward calculation
-	    self.cold_entry_risk_reward(a_iteration)
-	        
-	    return True
+		# rsi should be below 67.5 for the current candle, so I am not buying anything overextended
+		if self.data_pd['RsiClose14'].iloc[a_iteration] < 67.5:
+			rsi_pass = True
+		else:
+			return False
+		
+		#at this point a candle is a suitable sign for an entry position
+		#keeping track of cold entries (for simulation purposes)
+		if simulation == 1:
+			self.data_pd.loc[a_iteration, 'Cold Entry'] = 1
+		
+		#start the risk/reward calculation
+		self.cold_entry_risk_reward(a_iteration)
+			
+		return True
 
 	# in the case of using macd is the entry signal, the stop loss will be the lowest low in the last 15 minutes
 	# same case in this function, passing the starting point, same as in the cold entry function
 	# a_iteration = -1 in real time trading
 	def cold_entry_risk_reward(self, a_iteration):
 
-	    iterations = a_iteration - 10
-	    lowest_low = self.data_pd['High'].iloc[a_iteration]
+		iterations = a_iteration - 10
+		lowest_low = self.data_pd['High'].iloc[a_iteration]
 
-	    for candle in self.data_pd['Low'][iterations:]:
-	        if lowest_low > candle:
-	            lowest_low = candle
-	        iterations += 1
+		for candle in self.data_pd['Low'][iterations:]:
+			if lowest_low > candle:
+				lowest_low = candle
+			iterations += 1
 
-	    risk = lowest_low - 0.03
-	    reward = self.data_pd['High'].iloc[iterations-1] + ((self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
+		risk = lowest_low - 0.03
+		reward = self.data_pd['High'].iloc[iterations-1] + ((self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
 
-	    shares = round(Money_to_Risk / (self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
+		shares = round(Money_to_Risk / (self.data_pd['High'].iloc[iterations-1] - lowest_low) * 2)
 
-	    self.risk_reward_setup ={'risk': risk,
-	                             'reward' : reward, 
-	                             'shares' : shares, 
-	                             'ticker' : self.open_order_info['ticker']}
+		self.risk_reward_setup ={'risk': risk,
+									'reward' : reward, 
+									'shares' : shares, 
+									'ticker' : self.open_order_info['ticker']}
 
-	    print("R/R based on entry: ", self.risk_reward_setup )
+		print("R/R based on entry: ", self.risk_reward_setup )
 
-	    return True
+		return True
+	#not safe against DAY TIME SAVINGS and HALTS
+	#this function iterates through every minute of a specified stock between 9:30 (+some pre market) and 13:00
+	#and records cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
+	#this is a powerful function because it should accomodate every strategy I map out for any stock
+	#this would allow me to see results of my strategy in the past (past 30 day limit which TradingView imposes)
+	def run_through_model(self):
+		#specifying the start time (seconds, which backtracks a hundred candles and a whole day) 
+		# beware of the GMT TIME DIFFERENCE SAVINGS LIGHT
+		dates = pd.to_datetime(['2020-03-31'])
+		second = (dates - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s') 
+		
+		self.open_order_info['time'] = second[0] + 48600
+		self.open_order_info['ticker'] = "NCLH"
+		
+		self.data_pd = self.FH_connect.one_min_data_simulation(self.open_order_info)
+		
+		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
+		nine_30 = self.open_order_info['time']  #+ 3600 for day light savings time ALSO changein finn hubb
+		#starting from the index of 9:30 am
+		index_time = self.data_pd.index[self.data_pd['Timestamp'] == nine_30]
+		start_time = index_time[0]
+		
+		
+		one_00 = nine_30 + 12600 # adding to 1pm 
+		#finding the index of 1 PM
+		index_finish_time = self.data_pd.index[self.data_pd['Timestamp'] == one_00]
+		#taking the int element
+		finish_time = index_finish_time[0]
+
+		
+		while start_time != finish_time: 
+			self.cold_entry(self.open_order_info['ticker'], 1, start_time)
+			start_time +=1
+			
+					
+		iterations = 0
+		for yes in self.data_pd['Cold Entry']:
+			#print(yes)
+			if yes == 1:
+				print(self.data_pd['Timestamp'].iloc[iterations])
+			iterations+=1
 
 
-
-## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
-## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
-## make it possible to look at two stocks at the same time (more than one) threading?
-## build a simulation class in which you can see your entries and exits on a graph and a print out results
-## build a class that will feautre the highest sentiment stocks that are trending on StockTwits using their API
+	## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
+	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
+	## make it possible to look at two stocks at the same time (more than one) threading?
+	## build a simulation class in which you can see your entries and exits on a graph and a print out results
+	## build a class that will feautre the highest sentiment stocks that are trending on StockTwits using their API
