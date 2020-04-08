@@ -19,15 +19,12 @@ class Finn_Hub_API_Calls:
 	def five_min_data(self, open_order_info):
 		endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
-		#test_candle = 1584629852 #temp
 
 		payload = { 'symbol' : open_order_info['ticker'],
 					'resolution' : 5,
-					#'count' : 5, #getting the last 4 candles #uncomment
+					'count' : 5, #getting the last 4 candles #uncomment
 					'token' : finn_hub,
-					
-					'from' : 1586248566, #temp 
-					'to' : 1586291766 #temp
+
 		}
 
 		content = requests.get(url = endpoint, params = payload)
