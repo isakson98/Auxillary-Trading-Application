@@ -57,7 +57,7 @@ def check_opened_orders():
 	##query all saved orders and then delete one of them
 	data = TD.query_saved_orders()
 
-	order_id = data[0]['savedOrderId']
+	#order_id = data[0]['savedOrderId']
 	collection_of_orders = []
 	for order in data:
 	    order_data = { 'OrderId' : order['savedOrderId'], #change this temp 
@@ -102,10 +102,6 @@ def delete_opened_orders():
 	order_id = formated_orders[int(resp) - 1]['OrderId']
 	TD.deleting_one_saved_order(order_id) ## td call
 	return
-
-
-
-
 
 
 #  because i am using this function also for exiting trades out of the cold entry

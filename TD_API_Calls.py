@@ -19,7 +19,7 @@ class TD_API_Calls:
         endpoint = r"https://api.tdameritrade.com/v1/orders?fromEnteredTime={}".format(today_date) #uncomment
 
         # endpoint = r"https://api.tdameritrade.com/v1/orders" #temp
-        # payload = { 'toEnteredTime' : '2020-03-20', #temp
+        # payload = { 'toEnteredTime' : '2020-04-07', #temp
         #             'fromEnteredTime' : '2020-03-01',#temp
         #             'maxResults' : '100',#temp
         # }

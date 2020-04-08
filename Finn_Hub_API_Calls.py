@@ -1,7 +1,8 @@
 #from datetime import datetime
 from Config import finn_hub
 import pandas as pd
-import datetime as dt
+from datetime import date, timedelta, datetime
+import time
 import requests
 import json
 import csv
@@ -22,8 +23,11 @@ class Finn_Hub_API_Calls:
 
 		payload = { 'symbol' : open_order_info['ticker'],
 					'resolution' : 5,
-					'count' : 5, #getting the last 4 candles #uncomment
-					'token' : finn_hub
+					#'count' : 5, #getting the last 4 candles #uncomment
+					'token' : finn_hub,
+					
+					'from' : 1586248566, #temp 
+					'to' : 1586291766 #temp
 		}
 
 		content = requests.get(url = endpoint, params = payload)
@@ -40,7 +44,7 @@ class Finn_Hub_API_Calls:
 		payload = { 'symbol' : open_order_info['ticker'],
 					'resolution' : 5,
 					'count' : 12, 
-					'token' : finn_hub,
+					'token' : finn_hub
 		}
 
 		content = requests.get(url = endpoint, params = payload)
@@ -82,17 +86,17 @@ class Finn_Hub_API_Calls:
 		#going back 100 minutes (candles) to get accurate RSI for the first candle
 		#subbing 4 hours cause its UTX and we in est
 		#and adding 9:30 hours to get the open time
-		backtrack =  open_order_info['time'] - 3000 # subbing 15 candles
-		end_of_strat = backtrack + 12600 + 3000 #ending at 1 pm (+2.5 hours + 100 minutes)
+		backtrack =  open_order_info['time'] - 3000  # subbing 15 candles
+		end_of_strat = backtrack + 12600 + 3000  #ending at 1 pm (+2.5 hours + 100 minutes)
 		# print(backtrack)
-		# print(end_of_strat)
+		print("end of ", end_of_strat)
 		endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
 		payload = { 'symbol' : open_order_info['ticker'],
 					'resolution' : 1,
 					'token' : finn_hub,
 					'to' : end_of_strat,
-					'from' : backtrack
+					'from' : backtrack 
 					}
 
 		content = requests.get(url = endpoint, params = payload)
@@ -125,7 +129,7 @@ class Finn_Hub_API_Calls:
 		content = requests.get(url = endpoint, params = payload)
 
 		one_min_data = content.text
-		data_pd = pd.read_json(one_min_data)#,index=[0])
+		data_pd = pd.read_json(one_min_data)
 		data_pd.drop(columns = ['s'], inplace = True)
 		data_pd.columns = ['Close','High', 'Low', 'Open', 'Timestamp' ,'Volume']
 		data_pd['Close'] = round(data_pd['Close'],2)
@@ -136,30 +140,46 @@ class Finn_Hub_API_Calls:
 		return data_pd
 
 	#for filtering through data coming from stock twits
-	def day_data(self, open_order_info):
+	# i need to access 3pm of last trading day to compare %change.
+	# using hourly data as that is going to be the shortest intraday json
+	def prev_day_data(self, open_order_info):
 		endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
+		#getting yesterday's date
+		yesterday = (datetime.now() - timedelta(1)).date()
+
+		#converting yesterdays date to unix seconds and adding 15 hours, going to get the close value of the power hour 
+		timestamp = time.mktime(time.strptime(str(yesterday), '%Y-%m-%d'))
+		timestamp += 54000
 		#mondays
-		if (dt.date.today().isoweekday() == 1):
-			payload = { 'symbol' : open_order_info,
-						'resolution' : 'D',
-						'count' : 3, #getting the last 4 candles #uncomment
-						'token' : finn_hub,
-						#'to' : test_candle, #temp
-						#'from' : '1584628232' #temp
-			}
-		#other days of the week
-		else:
-			payload = { 'symbol' : open_order_info,
-						'resolution' : 'D',
-						'count' : 2, #getting the last 4 candles #uncomment
-						'token' : finn_hub,
-						#'to' : test_candle, #temp
-						#'from' : '1584628232' #temp
-			}
+		if (date.today().isoweekday() == 1):
+			timestamp -= 172800 # subbing two days to account for saturday and sunday
+
+		#sunday
+		elif (date.today().isoweekday() == 7):
+			timestamp -= 86400 # subbing 1 day to account for saturday
+
+		payload = { 'symbol' : open_order_info,
+				'resolution' : '60',
+				'token' : finn_hub,
+				'to' : time.time(), 
+				'from' : timestamp 
+		}
 
 		content = requests.get(url = endpoint, params = payload)
-
+		
 		day = content.json()
 
-		return day
+		if day['s'] == 'no_data':
+			return
+	
+		time_of_last_min = int(day['t'].index(timestamp))
+
+		# a lof of data is returning for a whole month for some reason,
+		# so i specify that I want to find from a specific hour
+		# time consuming but it works
+		prev_day_now_close = {'prev' : day['c'][time_of_last_min],
+							  'now' : day['c'][-1]}
+
+
+		return prev_day_now_close
