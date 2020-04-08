@@ -10,6 +10,8 @@ This program allows me autonomously to:
 
 This program also now supports simulations for different technical analysis functions defined in Risk_Reward.py file (manual date and ticker name)
 
+!!! Run TD_Console.py for a menu !!!
+
 Some of the pivotal libraries in this project: Selenium (+Splinter), TA, Pandas, Requests, Time 
 
 Currently used APIs : TD Ameritrade, Finn Hub, StockTwits
