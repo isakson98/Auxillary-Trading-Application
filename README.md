@@ -15,3 +15,5 @@ This program also now supports simulations for different technical analysis func
 Some of the pivotal libraries in this project: Selenium (+Splinter), TA, Pandas, Requests, Time 
 
 Currently used APIs : TD Ameritrade, Finn Hub, StockTwits
+
+You need your own accounts and register your own applications to input passwords (I stored mine in Config.py)
