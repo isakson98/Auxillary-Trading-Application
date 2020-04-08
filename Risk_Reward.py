@@ -105,11 +105,10 @@ class Risk_Reward:
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 # - 14400 #adjusting to seconds and local time
 		test_candle_time = test_candle_time - test_candle_time % 300 # get 5 min candle that test candle was part of 
-		print("test candle itme ", test_candle_time)
+		
 
 		# get the index of the 5 min candle where the 1 min entry candle is
 		time_of_last_5min = self.five_min_data['t'].index(test_candle_time) 
-		print("low of 5 min entry",self.five_min_data['l'][time_of_last_5min])
 		#get the low of 5min, entry acndle was in 
 		current_five_min = self.five_min_data['l'][time_of_last_5min] 
 		#get the 5min low before that
@@ -117,7 +116,6 @@ class Risk_Reward:
 
 		#compare the two 
 		five_min_stop_loss = current_five_min - 0.03 if current_five_min < prev_five_min else prev_five_min -0.03
-		print("current 5 min ", current_five_min, " prev ", prev_five_min)
 		target = round((self.open_order_info['price'] + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
 
 		self.risk_reward_setup = {'risk' : five_min_stop_loss, 
@@ -289,24 +287,18 @@ class Risk_Reward:
 					
 		time_now = self.sec_into_time_convert(a_iteration)
 
-		# any one of these conditions is a good reason to exit, I do need to wait for all of them to finish
-		## bb, rsi, candle combos 
-		# if (current['Timestamp'] == 1586190240 or current['Timestamp'] == 1586190300):
-		# 	print("candle " , (current['High'] > current['bb_bbh20']))
-		# 	print("rsi ", (current['rsiHigh'] >= 85))
-		# 	print("small body ", smaller_body)
 
 		middle_out_bb = (current['High'] > current['bb_bbh20']) and (current['rsiHigh'] >= 85) and smaller_body
 		if middle_out_bb : 
 			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", time_now) #self.data_pd['Timestamp'].iloc[a_iteration])
+			print("Hot Exit: ", time_now) 
 			return True
 
 
 		bb_and_current_wick_rsi = wick_and_rsi_high and extended_from_sma and smaller_body
 		if bb_and_current_wick_rsi : 
 			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", time_now) #self.data_pd['Timestamp'].iloc[a_iteration])
+			print("Hot Exit: ", time_now) 
 			return True
 
 		
@@ -414,14 +406,13 @@ class Risk_Reward:
 		lowest_low = self.data_pd['High'].iloc[a_iteration]
 
 
+		#finding the lowest low of the last 10 minutes, including the 
 		for candle in self.data_pd['Low'][iterations : a_iteration]:
-			#print(self.data_pd.iloc[[iterations]])
 			if lowest_low > candle:
 				lowest_low = candle
 			iterations += 1
 
-		#print("lowest low: ", lowest_low)
-		#print("current high: ", self.data_pd['High'].iloc[a_iteration])
+	
 		risk = round(lowest_low - 0.03, 2)
 		reward = round(self.data_pd['High'].iloc[a_iteration] + ((self.data_pd['High'].iloc[a_iteration] - lowest_low) * 2), 2)
 
@@ -433,7 +424,7 @@ class Risk_Reward:
 								'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now ) #self.data_pd['Timestamp'].iloc[a_iteration] )
+		print("R/R based on entry: ", self.risk_reward_setup, time_now ) 
 
 		return True
 
@@ -458,7 +449,6 @@ class Risk_Reward:
 		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
 		nine_30 = self.open_order_info['time']  #+ 3600 for day light savings time ALSO changein finn hubb
-		# print(nine_30)
 		#starting from the index of 9:30 am
 		index_time = self.data_pd.index[self.data_pd['Timestamp'] == nine_30]
 		start_time = index_time[0]

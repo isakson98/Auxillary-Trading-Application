@@ -10,7 +10,7 @@ from time import sleep
 from Finn_Hub_API_Calls import Finn_Hub_API_Calls
 import requests
 import urllib
-import pickle
+
 
 
 
@@ -27,25 +27,6 @@ class Sentiment_Screener:
 		# #create a new instance of the chrome browser
 		# executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
 		# self.browser = Browser('chrome', **executable_path, headless = True )
-	
-	#beta
-	#saving cookies from the first time
-	def save_cookies(self, browser):
-		path = "./cookies/stock_twits.txt"
-		pickle.dump(browser.cookies.all(), open(path, "wb"))
-
-	#beta
-	#loading cookies into subsequent launches of the browser
-	def load_cookies(self, browser):
-		path = "./cookies/stock_twits.txt"
-		cookies = pickle.load(open(path, "rb"))
-		browser.cookies.delete()
-
-		#have to be on some page to start 
-		browser.visit("https://google.com")
-		for cookie in cookies:
-			print(cookie)
-			#browser.cookies.add(cookie)
 
 	#the first time launching the program
 	def authorize_stock_twit(self):
