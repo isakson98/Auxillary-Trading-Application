@@ -92,6 +92,12 @@ class Risk_Reward:
 		self.open_order_info['time'] = ((date - epoch).total_seconds() * 1000.0)
 		return
 
+	def sec_into_time_convert(self, iterations):
+		unix_sec = self.data_pd['Timestamp'].iloc[iterations]
+		date = datetime.fromtimestamp(unix_sec)
+		date = (date.strftime('%Y-%m-%d %H:%M:%S'))
+		return date
+
 	# calculates 1 Risk / 2 Reward ratio, basing the risk off of either the current or previous lowest 5 min low
 	def five_min_calc_r_r(self): #3.0
 		self.five_min_data = self.FH_connect.five_min_data(self.open_order_info)
@@ -99,9 +105,11 @@ class Risk_Reward:
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 # - 14400 #adjusting to seconds and local time
 		test_candle_time = test_candle_time - test_candle_time % 300 # get 5 min candle that test candle was part of 
+		print("test candle itme ", test_candle_time)
 
 		# get the index of the 5 min candle where the 1 min entry candle is
 		time_of_last_5min = self.five_min_data['t'].index(test_candle_time) 
+		print("low of 5 min entry",self.five_min_data['l'][time_of_last_5min])
 		#get the low of 5min, entry acndle was in 
 		current_five_min = self.five_min_data['l'][time_of_last_5min] 
 		#get the 5min low before that
@@ -109,6 +117,7 @@ class Risk_Reward:
 
 		#compare the two 
 		five_min_stop_loss = current_five_min - 0.03 if current_five_min < prev_five_min else prev_five_min -0.03
+		print("current 5 min ", current_five_min, " prev ", prev_five_min)
 		target = round((self.open_order_info['price'] + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
 
 		self.risk_reward_setup = {'risk' : five_min_stop_loss, 
@@ -272,55 +281,33 @@ class Risk_Reward:
 
 		wick_vs_body = abs(current['Open'] - current['Close']) < current_sum_oflow_high_wicks
 
-		sum_wick_dif = current_sum_oflow_high_wicks >= (2 * prev_sum_oflow_high_wicks)
-
-		volume_low_price_high = current['Volume'] < prev['Volume'] and ((current['High'] - current['Low']) > 1.5 * (prev['High'] - prev['Low']))
-
-		candle_middle = round((current['Low'] + (current['High'] - current['Low']) / 2), 2)
-
-
 		#rsi and candle combos
 		wick_and_rsi_high = (current['rsiHigh'] > 80) and wick_vs_body
-
-		sum_prev_wick_rsi = (current['rsiHigh'] > 80) and sum_wick_dif
 
 		#sma from BB
 		extended_from_sma = (abs(current['High'] - current['Low']) < (current['Low'] - current['SMA']))
 					
+		time_now = self.sec_into_time_convert(a_iteration)
 
 		# any one of these conditions is a good reason to exit, I do need to wait for all of them to finish
 		## bb, rsi, candle combos 
-		middle_out_bb = (candle_middle > current['bb_bbh20']) and (current['rsiHigh'] >= 85) and smaller_body
+		# if (current['Timestamp'] == 1586190240 or current['Timestamp'] == 1586190300):
+		# 	print("candle " , (current['High'] > current['bb_bbh20']))
+		# 	print("rsi ", (current['rsiHigh'] >= 85))
+		# 	print("small body ", smaller_body)
+
+		middle_out_bb = (current['High'] > current['bb_bbh20']) and (current['rsiHigh'] >= 85) and smaller_body
 		if middle_out_bb : 
 			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			print("Hot Exit: ", time_now) #self.data_pd['Timestamp'].iloc[a_iteration])
 			return True
 
-		big_green_but_low_vol_and_rsi = (current['rsiHigh'] >=80) and volume_low_price_high and current['High'] >= prev['High'] and smaller_body
-		if big_green_but_low_vol_and_rsi : 
-			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
-			return True
-
-		bb_and_sum_prev_wick_rsi = (current['High'] >= current['bb_bbh']) and sum_prev_wick_rsi and smaller_body
-		if bb_and_sum_prev_wick_rsi : 
-			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
-			return True
 
 		bb_and_current_wick_rsi = wick_and_rsi_high and extended_from_sma and smaller_body
 		if bb_and_current_wick_rsi : 
 			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
+			print("Hot Exit: ", time_now) #self.data_pd['Timestamp'].iloc[a_iteration])
 			return True
-			
-
-		bb_and_current_wick_rsi_out = wick_and_rsi_high and (current['High'] >= current['bb_bbh']) and smaller_body
-		if bb_and_current_wick_rsi_out : 
-			self.data_pd.loc[a_iteration, 'Hot Exit'] = 1
-			print("Hot Exit: ", self.data_pd['Timestamp'].iloc[a_iteration])
-			return True
-			
 
 		
 		return False
@@ -353,7 +340,7 @@ class Risk_Reward:
 			#macd
 			indicator_macd = ta.trend.MACD(close=self.data_pd["Close"], n_slow = 26, n_fast = 12, n_sign = 9)
 			#print(indicator_macd)
-			self.data_pd['Macd'] = round(indicator_macd.macd_diff(),3)
+			self.data_pd['Macd'] = round(indicator_macd.macd_diff(),4)
 
 			##RSI indicator
 			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
@@ -363,21 +350,21 @@ class Risk_Reward:
 		# will iterate through one negative macd before my test candle (which is supposed to be the start of green field) and one positive macd before that
 		# i want to see the highest bar in green to be higher than the lowest bar in red (absolute value)
 		iterations_v2 = a_iteration
-		lowest_macd = 0.000 #this will remain 0.00 in case the previous
-		highest_macd = -0.001
+		lowest_macd = 0.0000 #this will remain 0.00 in case the previous
+		highest_macd = -0.0001
 		
 		#BASIC GIST OF THINGS -> 
 		#iterating while current is in red and less then the previous candle (sign of strength)
 		#comparing to the previous green field
 		#the current histogram bar has to be red
-		if self.data_pd['Macd'].iloc[iterations_v2] > 0.000:
+		if self.data_pd['Macd'].iloc[iterations_v2] > 0.0000:
 			return False
 		
 		
 		#if current higher than prev and prev is lower than prevprev
-		cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] and self.data_pd['Macd'].iloc[iterations_v2] <= 0.000
-		cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] and self.data_pd['Macd'].iloc[iterations_v2 -1] < 0.000
-		cond3 = self.data_pd['Macd'].iloc[iterations_v2 - 2] < 0.000
+		cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] and self.data_pd['Macd'].iloc[iterations_v2] <= 0.0000
+		cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] and self.data_pd['Macd'].iloc[iterations_v2 -1] < 0.0000
+		cond3 = self.data_pd['Macd'].iloc[iterations_v2 - 2] < 0.0000
 		
 		if cond1 and cond2 and cond3:
 				lowest_macd = self.data_pd['Macd'].iloc[iterations_v2 - 1]
@@ -385,7 +372,7 @@ class Risk_Reward:
 			return False
 		
 		#comparing in the red histogram field the current bar to the previous
-		while self.data_pd['Macd'].iloc[iterations_v2] <= 0.000:
+		while self.data_pd['Macd'].iloc[iterations_v2] <= 0.0000:
 			#if in the same red field the current is closer to 0 then prev- > not interested 
 			if self.data_pd['Macd'].iloc[iterations_v2] < lowest_macd:
 				return False
@@ -393,7 +380,7 @@ class Risk_Reward:
 			
 		#keeping the same counter to start iterating through the green field
 		#going through green, previous to the red field
-		while self.data_pd['Macd'].iloc[iterations_v2] >= 0.000:
+		while self.data_pd['Macd'].iloc[iterations_v2] >= 0.0000:
 			if self.data_pd['Macd'].iloc[iterations_v2] > highest_macd:
 				highest_macd = self.data_pd['Macd'].iloc[iterations_v2]
 			iterations_v2 -=1 
@@ -426,11 +413,15 @@ class Risk_Reward:
 		iterations = a_iteration - 10
 		lowest_low = self.data_pd['High'].iloc[a_iteration]
 
-		for candle in self.data_pd['Low'][iterations:]:
+
+		for candle in self.data_pd['Low'][iterations : a_iteration]:
+			#print(self.data_pd.iloc[[iterations]])
 			if lowest_low > candle:
 				lowest_low = candle
 			iterations += 1
 
+		#print("lowest low: ", lowest_low)
+		#print("current high: ", self.data_pd['High'].iloc[a_iteration])
 		risk = round(lowest_low - 0.03, 2)
 		reward = round(self.data_pd['High'].iloc[a_iteration] + ((self.data_pd['High'].iloc[a_iteration] - lowest_low) * 2), 2)
 
@@ -441,7 +432,8 @@ class Risk_Reward:
 								'shares' : shares, 
 								'ticker' : self.open_order_info['ticker']}
 
-		print("R/R based on entry: ", self.risk_reward_setup, self.data_pd['Timestamp'].iloc[a_iteration] )
+		time_now = self.sec_into_time_convert(a_iteration)
+		print("R/R based on entry: ", self.risk_reward_setup, time_now ) #self.data_pd['Timestamp'].iloc[a_iteration] )
 
 		return True
 
@@ -461,28 +453,31 @@ class Risk_Reward:
 		self.open_order_info['ticker'] = name
 		
 		self.data_pd = self.FH_connect.one_min_data_simulation(self.open_order_info)
+
+		
 		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
 		nine_30 = self.open_order_info['time']  #+ 3600 for day light savings time ALSO changein finn hubb
+		# print(nine_30)
 		#starting from the index of 9:30 am
 		index_time = self.data_pd.index[self.data_pd['Timestamp'] == nine_30]
 		start_time = index_time[0]
 		
 		
-		one_00 = nine_30 + 12600 # adding to 1pm 
+		one_00 = nine_30 + 12600 - 120# adding to 1pm  temp subtraction cause of a bug, which does not return last values
 		#finding the index of 1 PM
+		
 		index_finish_time = self.data_pd.index[self.data_pd['Timestamp'] == one_00]
 		#taking the int element
 		finish_time = index_finish_time[0]
-
 		
 		while start_time != finish_time: 
 			self.hot_exit(1, start_time)
 			self.cold_entry(self.open_order_info['ticker'], 1, start_time)
 			start_time +=1
 
+		
 		return 0
-			
 
 
 	## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
@@ -490,6 +485,8 @@ class Risk_Reward:
 	## build a simulation class in which you can see your entries and exits on a graph and a print out results
 	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
 
-	## multithreading -> build a GUI with two terminal windows which allow to have to processes at the same time
-	## easy level would be to allow two threads to work on two different files (sentiment screener and cold entry)
-	## medium level would be allowing two cold entries (I would need to create two object of the same file, obv)
+
+	## 0) using cookies to bypass 30 second entry using selenium
+	## 1)  multithreading -> build a GUI with two terminal windows which allow to have to processes at the same time
+	## 2)  easy level would be to allow two threads to work on two different files (sentiment screener and cold entry)
+	## 3)  medium level would be allowing two cold entries (I would need to create two object of the same file, obv)
