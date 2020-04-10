@@ -5,10 +5,10 @@
 # i will have a command that will bring me 5 min updates
 #use finnhub to get current days close and yesterdays close to determine change %
 from Config import st_client_id, st_client_secret, st_twt_user, st_twt_pass
-from Finn_Hub_API_Calls import Finn_Hub_API_Calls
 from datetime import datetime
 from splinter import Browser
 from time import sleep
+import FH_News_API_Calls as FH_N
 import pandas as pd
 import requests
 import urllib
@@ -23,9 +23,7 @@ class Sentiment_Screener:
 		self.auth_code = None
 		self.access_code = None
 		self.list_of_names = []
-		self.finn_data = Finn_Hub_API_Calls()
 		self.filtered_stocks = []
-		self.auth_url = None
 		self.second_time_writing = False
 
 		# ^ create a new instance of the chrome browser
@@ -38,7 +36,6 @@ class Sentiment_Screener:
 		browser = Browser('chrome', **executable_path, headless = True )
 
 		#running the first time to get the url of the 
-		#if self.auth_url == None: #if statement start
 		endpoint = "https://api.stocktwits.com/api/2/oauth/authorize"
 
 		payload = {'client_id' : st_client_id,
@@ -51,9 +48,9 @@ class Sentiment_Screener:
 		#build the url
 		build_url = requests.Request(method, endpoint, params= payload).prepare()
 		build_url = build_url.url
-		self.auth_url = build_url #if statement end
+		build_url 
 			
-		browser.visit(self.auth_url)
+		browser.visit(build_url)
 
 
 		browser.find_by_id("user_session_login").fill(st_twt_user)
@@ -99,26 +96,34 @@ class Sentiment_Screener:
 
 		data = content.json()
 
-		for name in data['symbols']:
-			self.list_of_names.append(name['symbol'])
+		local_list = []
 
-		print(self.list_of_names)
+		for name in data['symbols']:
+			local_list.append(name['symbol'])
+		
+		self.list_of_names = local_list
+
+		print(local_list)
 
 	#passing all trending stocks throught finn hubb api to find gapped up stocks 
 	#change that you are comparing to close of 3:59 of the prev day.
 	def filter_trending(self):
 
+		local_filtered = []
+
 		for stock in self.list_of_names:
 			#returning a dict with two keys of last day's close and current price
-			data_d = self.finn_data.prev_day_data(stock)
+			data_d = FH_N.prev_day_data(stock)
 			try:
 				change = (data_d['now'] - data_d['prev']) / data_d['prev']
 				if change > 0.05:
-					self.filtered_stocks.append(stock)
+					local_filtered.append(stock)
 			except:
 				pass
 
-		print(self.filtered_stocks)
+		self.filtered_stocks = local_filtered
+
+		print(local_filtered)
 
 		
 		# want this operation run only once a day, but here safety only set for one run of the program
@@ -194,7 +199,7 @@ class Sentiment_Screener:
 
 		today_date = datetime.date(datetime.now())
 		for ticker in list_for_news:
-			article = self.finn_data.news_ticker(ticker, today_date)
+			article = FH_N.news_ticker(ticker, today_date)
 			if article != None:
 				print(ticker)
 				print(article)

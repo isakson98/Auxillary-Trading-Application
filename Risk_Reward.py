@@ -8,7 +8,7 @@
 #    D. Cold entry + its risk		    (run through model integrated)
 # 4. It is also capable of running simulations on intraday basis if ticker and date are specified
 
-from Finn_Hub_API_Calls import Finn_Hub_API_Calls
+import FH_News_API_Calls as FH_N
 from datetime import datetime
 from dateutil import parser
 import time 
@@ -29,7 +29,6 @@ class Risk_Reward:
 		self.five_min_data = None
 		self.one_min_data = None
 		self.data_pd = None
-		self.FH_connect = Finn_Hub_API_Calls()
 		
 
 	#saving opened orders for the day in case I will reopen the program and will be prompted to apply r/r again
@@ -100,7 +99,7 @@ class Risk_Reward:
 
 	# calculates 1 Risk / 2 Reward ratio, basing the risk off of either the current or previous lowest 5 min low
 	def five_min_calc_r_r(self): #3.0
-		self.five_min_data = self.FH_connect.five_min_data(self.open_order_info)
+		self.five_min_data = FH_N.five_min_data(self.open_order_info)
 		self.time_conversion_retrieved_into_send()
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 # - 14400 #adjusting to seconds and local time
@@ -132,7 +131,7 @@ class Risk_Reward:
 	# returns a dictionary with final values to close the trade at, ticker name, and # of shares bought in the opening trade
 	def one_min_calc_r_r(self): #3.0
 
-		self.one_min_data = self.FH_connect.one_min_data(self.open_order_info)
+		self.one_min_data = FH_N.one_min_data(self.open_order_info)
 		self.time_conversion_retrieved_into_send() 
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 #- 14400 #adjusting to seconds and local time
@@ -189,7 +188,7 @@ class Risk_Reward:
 
 		# keeping these separate becasuse I am creating local smaller dataframes for real time trading to increase performance
 		if simulation == 0:
-			self.data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
+			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
 
 			# if the price has not reached 2X Reward, oversold != need to exit
 			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
@@ -324,7 +323,7 @@ class Risk_Reward:
 		
 		#if I am doing real time trading, I need to request data every time I use this function 
 		if simulation == 0:
-			self.data_pd = self.FH_connect.one_min_data_csv(self.open_order_info)
+			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
 
 		#only need to collect this data once for simulation. It will be saved from then on
 		#Either live or simulation -> both need to access these indicator calculations
@@ -444,7 +443,7 @@ class Risk_Reward:
 		self.open_order_info['time'] = second[0] + 48600
 		self.open_order_info['ticker'] = name
 		
-		self.data_pd = self.FH_connect.one_min_data_simulation(self.open_order_info)
+		self.data_pd = FH_N.one_min_data_simulation(self.open_order_info)
 
 		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
