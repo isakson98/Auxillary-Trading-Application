@@ -28,7 +28,7 @@ class TD_API_Calls:
         try:
             content = requests.get(url = endpoint, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError : #as e before this
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -42,14 +42,14 @@ class TD_API_Calls:
         return data
 
     
-    def sending_oco(self, risk_reward_dict):   ##temp saved
+    def sending_oco(self, risk_reward_dict):   
         ##creating a double order
 
-        #creating a saved order
+        #creating an order
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)   ##temp saved
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)   
 
 
         payload = {
@@ -98,7 +98,7 @@ class TD_API_Calls:
         try:
             content = requests.post(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -120,7 +120,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)  ##temp saved
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)  
 
         payload = {
             "orderType": "STOP",
@@ -145,7 +145,7 @@ class TD_API_Calls:
         try:
             content = requests.post(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -168,7 +168,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)  ##temp saved
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number) 
 
         payload = {
             "orderType": "MARKET",
@@ -192,7 +192,7 @@ class TD_API_Calls:
         try:
             content = requests.post(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError :
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -212,7 +212,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)  ##temp saved
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)  
 
         payload = {
             "orderType": "MARKET",
@@ -235,7 +235,7 @@ class TD_API_Calls:
         try:
             content = requests.post(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -260,7 +260,7 @@ class TD_API_Calls:
         try:
             content = requests.get(url=endpoint, headers=header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -276,7 +276,7 @@ class TD_API_Calls:
 
     #looks like this is the same funcion as the first one aka retrieve_orders()
     def query_real_orders(self):
-        ##query all saved orders
+        ##query all orders
         header = {'Authorization' : "Bearer {}".format(self.access_token)}
 
         endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)
@@ -284,7 +284,7 @@ class TD_API_Calls:
         try:
             content = requests.get(url = endpoint, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -306,7 +306,7 @@ class TD_API_Calls:
         try:
             content = requests.get(url = endpoint, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError :
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -322,7 +322,7 @@ class TD_API_Calls:
 
 
     def deleting_one_real_order(self, order_id):
-        ## deleting the saved order
+        ## deleting the  order
         header = {'Authorization' : "Bearer {}".format(self.access_token)}
 
         #adding an order id 
@@ -331,7 +331,7 @@ class TD_API_Calls:
         try:
             content = requests.delete(url = endpoint, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError :
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
@@ -355,7 +355,7 @@ class TD_API_Calls:
         try:
             content = requests.delete(url = endpoint, headers = header)
             content.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token

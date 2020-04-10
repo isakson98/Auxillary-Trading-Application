@@ -48,20 +48,20 @@ class TDAuthentication:
 		#define the elements to pass throught the form
 		payload = {'username' : self.username, 'password' : self.password}
 
-		username_box = browser.find_by_id("username").fill(payload['username'])
-		password_box = browser.find_by_id("password").fill(payload['password'])
-		click = browser.find_by_id("accept").first.click()
+		browser.find_by_id("username").fill(payload['username'])
+		browser.find_by_id("password").fill(payload['password'])
+		browser.find_by_id("accept").first.click()
 
 		#phone number page
 		time.sleep(1)
-		click = browser.find_by_xpath("//summary").first.click()
+		browser.find_by_xpath("//summary").first.click()
 		#input is the classifier, name is in the same 
-		click = browser.find_by_xpath("//input[@name='init_secretquestion']").first.click()
+		browser.find_by_xpath("//input[@name='init_secretquestion']").first.click()
 
 		#secret answer page
 		#inspect what the question is first
 		time.sleep(1)
-		secret_answer = 0;
+		secret_answer = 0
 		secret_question = browser.find_by_xpath("//div[@class='row description']").text
 		#split by default concatates and splits by whitespace
 		#reading from reversed to save time on parsing: the question is from the end
@@ -80,12 +80,12 @@ class TDAuthentication:
 		        secret_answer = self.secret_restaurant
 		        break
 		#print(secret_answer)        
-		answer_secret = browser.find_by_id("secretquestion").fill(secret_answer)
-		click_submit = browser.find_by_id("accept").first.click()
+		browser.find_by_id("secretquestion").fill(secret_answer)
+		browser.find_by_id("accept").first.click()
 
 		#accepting terms and conditions page
 		time.sleep(1)
-		click_submit = browser.find_by_id("accept").first.click()
+		browser.find_by_id("accept").first.click()
 
 
 		#clicking to accept terms and conditions
