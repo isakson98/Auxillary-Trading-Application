@@ -5,11 +5,14 @@
 # i will have a command that will bring me 5 min updates
 #use finnhub to get current days close and yesterdays close to determine change %
 from Config import st_client_id, st_client_secret, st_twt_user, st_twt_pass
+from Finn_Hub_API_Calls import Finn_Hub_API_Calls
+from datetime import datetime
 from splinter import Browser
 from time import sleep
-from Finn_Hub_API_Calls import Finn_Hub_API_Calls
+import pandas as pd
 import requests
 import urllib
+import csv
 
 
 
@@ -23,6 +26,7 @@ class Sentiment_Screener:
 		self.finn_data = Finn_Hub_API_Calls()
 		self.filtered_stocks = []
 		self.auth_url = None
+		self.second_time_writing = False
 
 		# #create a new instance of the chrome browser
 		# executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
@@ -118,10 +122,96 @@ class Sentiment_Screener:
 
 		print(self.filtered_stocks)
 
+		
+		# want this operation run only once a day, but here safety only set for one run of the program
+		# for the day is set in write funcion itself
+		if self.second_time_writing == False:
+			#writing todays tickers into the file
+			self.write_filtered()
+			self.second_time_writing = True
+
 		#cleanning up the lists to process in the same lists during the smae run
 		self.filtered_stocks.clear()
 		self.list_of_names.clear()
+ 
+	
+	# things to consider in development 
+	# 1) when will i write the new stocks in? - so far i can only do it once a day
+	# 2) what happens when I run the program twice in the day? will tickers be replaced or held the same? - held the same for now
+	# 3) when will I check news for those stocks and will i do it repeatedly? - thats up to you, i can retrieve tickers any time (need to build a second option in console)
+	# 4) what will be the process of deleting last date and its tickers? - from recent and down. deleting tail if > 20 tickers
+	# 5) how will I cap number of stocks? go from api limit, but will I keep calender or just count of 20 days ex. - my api is maxed at 60 calls a minute, so 3 tickers * 20 days at once
+	# 6) will I have to run this program every day? what happens if miss? - looks like for whatever days I miss, I'll add myself manually
 
+
+	# this function writes todays trending stocks into a csv, which holds last 20 trading days
+	# it moves data from a file into a dataframe, adds one row to the bottom, sorts df so that row gets to the top, and writes the completed df to the same file
+	# room for improvement:
+	# very inefficient because i am copying everything from one file, sort inefficiently, and write everything back to the file
+	# BE CAREFUL using this function on weekends
+	def write_filtered(self):
+
+		try:
+			recent_tickers = pd.read_csv("recent_runners.csv")
+			today_date = str(datetime.date(datetime.now()))
+
+			#.values returns dataframe's each row as numpy array 
+			#return if todays tickers are already in frame
+			for date in recent_tickers.values:
+				if date[0] == today_date:
+					print("Todays' tickers already recorded")
+					return
+
+			#deleting the last day if there are more than 20 days in the dataframe
+			if len(recent_tickers.index) >= 20:
+				recent_tickers.drop(recent_tickers.tail(1).index,inplace=True)
+
+			#todays data to be added in the first row 
+			data = {'date': str(today_date), 'ticker_1': self.filtered_stocks[0], 'ticker_2': self.filtered_stocks[1], 'ticker_3' :self.filtered_stocks[2]}
+			
+			#adding in chronological order
+			recent_tickers.loc[-1] = data  # adding a row
+			recent_tickers.index = recent_tickers.index + 1  # shifting index
+			recent_tickers.sort_index(inplace=True) 
+			recent_tickers.to_csv("recent_runners.csv", header = True, index = False)
+				
+		#in case I need to create a file first 
+		except:
+			with open('recent_runners1.csv', mode='w') as recent_runners_file:
+				fieldnames = ['date', 'ticker_1', 'ticker_2', 'ticker_3']
+				writer = csv.DictWriter(recent_runners_file, fieldnames=fieldnames)
+				#always using to todays date to write 
+				today_date = datetime.date(datetime.now())
+				#writing in the csv file using dicts
+				writer.writeheader()
+				writer.writerow({'date': str(today_date), 'ticker_1': self.filtered_stocks[0], 'ticker_2': self.filtered_stocks[1], 'ticker_3' :self.filtered_stocks[2]})
+		return 
+
+	#retrieves tickers from csv and uses news api, to check if they have news
+	def read_filtered_and_news(self):
+		# retrieve all tickers from 3 existing columns, 
+		# check for news, get the stocks that have news, 
+		# show the news and ticker with it
+		recent_tickers = pd.read_csv("recent_runners.csv")
+
+		list_for_news = []
+
+		for ticker in recent_tickers.values:
+			list_for_news.append(ticker[1])
+			list_for_news.append(ticker[2])
+			list_for_news.append(ticker[3])
+
+
+		today_date = datetime.date(datetime.now())
+		for ticker in list_for_news:
+			article = self.finn_data.news_ticker(ticker, today_date)
+			if article != None:
+				print(ticker)
+				print(article)
+				print (" ")
+		return 
+
+	# all the functions needed to get current trending tickers from StockTwit
 	def all_in_one(self):
 
 		self.authorize_stock_twit()

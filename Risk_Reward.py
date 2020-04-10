@@ -183,8 +183,6 @@ class Risk_Reward:
 	#instead add more different specifications to have more accurate results
 	def hot_exit(self, simulation, a_iteration):
 
-		# this will be used either by realtime or simulation
-		data_pd_shorty = None
 
 		#initializing in scope, so I can access later
 		data_pd_short = None
@@ -234,16 +232,20 @@ class Risk_Reward:
 			self.data_pd['SMA'] = self.data_pd['Close'].rolling(window=9).mean()
 
 
-		# to avoid repetitive calculations in simulation, I will repopulate 
-		if simulation == 0:
-			data_pd_shorty = data_pd_short.copy()
-		else:
-			data_pd_shorty = self.data_pd[a_iteration - 2 : a_iteration + 1].copy()
+		#not active right now
+		# this will be used either by realtime or simulation
+		#data_pd_shorty = None
+		# # to avoid repetitive calculations in simulation, I will repopulate 
+		# if simulation == 0:
+		# 	data_pd_shorty = data_pd_short.copy()
+		# else:
+		# 	data_pd_shorty = self.data_pd[a_iteration - 2 : a_iteration + 1].copy()
 
 
 
 		##using dicts to avoid calling the last element of a big array using iloc (inefficient)
 		#for the last 3 I am using the last element in either of the shortened lists
+		
 		current = {'Close' : self.data_pd['Close'].iloc[a_iteration],
 					'High': self.data_pd['High'].iloc[a_iteration], 
 					'Low': self.data_pd['Low'].iloc[a_iteration], 
@@ -251,9 +253,9 @@ class Risk_Reward:
 					'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration],
 					'Volume' : self.data_pd['Volume'].iloc[a_iteration],
 					'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration],
-					'bb_bbh' : data_pd_shorty['bb_bbh'].iloc[-1],
-					'bb_bbh20' :data_pd_shorty['bb_bbh20'].iloc[-1],
-					'SMA' :data_pd_shorty['SMA'].iloc[-1]
+					'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration],#data_pd_shorty['bb_bbh'].iloc[-1],
+					'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration], #data_pd_shorty['bb_bbh20'].iloc[-1],
+					'SMA' : self.data_pd['SMA'].iloc[a_iteration]
 		}
 
 		prev = {'Close' : self.data_pd['Close'].iloc[a_iteration-1],
@@ -263,9 +265,9 @@ class Risk_Reward:
 				'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration-1],
 				'Volume' : self.data_pd['Volume'].iloc[a_iteration-1],
 				'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration-1],
-				'bb_bbh' : data_pd_shorty['bb_bbh'].iloc[-2],
-				'bb_bbh20' : data_pd_shorty['bb_bbh20'].iloc[-2],
-				'SMA' : data_pd_shorty['SMA'].iloc[-2]
+				'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration -1],#data_pd_shorty['bb_bbh'].iloc[-2],
+				'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration -1], #data_pd_shorty['bb_bbh20'].iloc[-2],
+				'SMA' : self.data_pd['SMA'].iloc[a_iteration - 1]
 		}
 
 
@@ -274,8 +276,6 @@ class Risk_Reward:
 		smaller_body = abs(current['Close'] - current['Open']) < abs(prev['Close'] - prev['Open'])
 
 		current_sum_oflow_high_wicks = abs(current['Low'] - current['High']) - abs(current['Open'] - current['Close'])
-
-		prev_sum_oflow_high_wicks = abs(prev['Low'] - prev['High']) - abs(prev['Open'] - prev['Close'])
 
 		wick_vs_body = abs(current['Open'] - current['Close']) < current_sum_oflow_high_wicks
 
@@ -349,6 +349,7 @@ class Risk_Reward:
 		#iterating while current is in red and less then the previous candle (sign of strength)
 		#comparing to the previous green field
 		#the current histogram bar has to be red
+
 		if self.data_pd['Macd'].iloc[iterations_v2] > 0.0000:
 			return False
 		
@@ -446,7 +447,6 @@ class Risk_Reward:
 		self.data_pd = self.FH_connect.one_min_data_simulation(self.open_order_info)
 
 		
-		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
 		nine_30 = self.open_order_info['time']  #+ 3600 for day light savings time ALSO changein finn hubb
 		#starting from the index of 9:30 am
@@ -472,11 +472,11 @@ class Risk_Reward:
 
 	## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
 	## make it possible to look at two stocks at the same time (more than one) threading?
-	## build a simulation class in which you can see your entries and exits on a graph and a print out results
+	## build a simulation class which can track profit or loss, not just entries
 	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
+	## use AWS for password protection
 
 
-	## 0) using cookies to bypass 30 second entry using selenium
 	## 1)  multithreading -> build a GUI with two terminal windows which allow to have to processes at the same time
 	## 2)  easy level would be to allow two threads to work on two different files (sentiment screener and cold entry)
 	## 3)  medium level would be allowing two cold entries (I would need to create two object of the same file, obv)

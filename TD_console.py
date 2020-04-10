@@ -12,7 +12,10 @@ TD = TD_API_Calls()
 sent = Sentiment_Screener()
 
 
-
+#placing orders after manual entry
+#continuously checking with TD_ameritrade whether an order has been placed
+#propmpts the user for the type of strategy used,
+#makes a call to risk_reward to calculatte
 def one_r_two_r_exit_placement():
 	##continue requesting the data for an opening trade until there is one
 	try:
@@ -44,9 +47,6 @@ def one_r_two_r_exit_placement():
 	except KeyboardInterrupt:
 		print("Stop checking for opening positions")
 		print()
-
-
-
 
 
 #FOR VISIBILITY (not automation)
@@ -86,6 +86,7 @@ def check_opened_orders():
 	collection_of_orders.append(iteration)
 #creating an extra element, which can create a crash if I choose the last element to delete cause it will be an iteration number     	
 	return collection_of_orders
+
 
 #FOR VISIBILITY (not automation)
 #deleting orders manually
@@ -219,40 +220,53 @@ def start_cold_entry():
 		time.sleep(60.0 - ((time.time() - starttime) % 60.0))
 
 
+	#part of sending the order
 	final_r_r = fox.risk_reward_setup
 
-	# send a buy market order to buy immidiately
+	#sending a 1:2 R/R
+	TD.sending_oco(final_r_r)
+
+
+	# for using hot exit
 	#TD.sending_cold_ENTRY_order(final_r_r) temp
-
-	#sending a stop loss order based on the high and the chandelier value
 	#TD.sending_RISK_exit_order(final_r_r) temp
-
-
-	# the final step of cold entry strategy is finding an exit 
-	# think whether I want to implement 
 	#start_hot_exit(1) temp
 
 	return 0
 
-
+#
 def repeat_trending_stocks():
 
-	try:
-		starttime=round(time.time())
-		sent.all_in_one()
-		while True:
-		    time.sleep(300.0 - ((time.time() - starttime) % 300.0))
-		    sent.all_in_one()
-	except:
-		print("Exiting viewing trending stocks")
+	print("Review [1] current trading or [2] recent trading")
+	options = input()
+
+	#if option is one, use StockTwit api to get currently trading
+	if options == '1':
+		try:
+			starttime=round(time.time())
+			sent.all_in_one()
+			while True:
+				time.sleep(300.0 - ((time.time() - starttime) % 300.0))
+				sent.all_in_one()
+		except:
+			print("Exiting viewing trending stocks")
+	
+	#if 2, open csv with previously trading stocks, check for today's news
+	elif options == '2':
+		sent.read_filtered_and_news()
+
 
 def model_init():
 
 	print("Enter ticker symbol: ")
 	name = input()
 
-	print("Enter date to analyze (yyyy-mm-dd'): ")
+	print("Enter date to analyze (yyyy-mm-dd') or write [now] for today: ")
 	date = input()
+
+	if date == "now":
+		today_date = datetime.date(datetime.now())
+		date = today_date.isoformat()
 
 	fox.run_through_model(name, date)
 
@@ -261,13 +275,13 @@ def model_init():
 while True:
 	print('--------------------------------------')
 	print("Select from the options below: ")
-	print("[0] - Place 1R / 2R exit trades")  ##works without a problem
-	print("[1] - Check opened / saved orders") ## works without a problem
-	print("[2] - Delete opened / saved orders") ## workd wihtout a problem
+	print("[0] - Place 1R / 2R exit trades")  
+	print("[1] - Check opened / saved orders") 
+	print("[2] - Delete opened / saved orders") 
 	print("[3] - Start hot exit")
 	print("[4] - Start cold entry")
-	print("[5] - See trending stocks") ## works without a problem
-	print("[6] - Run simulation model") ## works without a problem
+	print("[5] - See trending stocks") 
+	print("[6] - Run simulation model")
 	print("[10] - Find risk order ID")
 	print("[q] - Quit the program")
 	print('--------------------------------------')

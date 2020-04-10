@@ -1,5 +1,5 @@
 #from datetime import datetime
-from Config import finn_hub
+from Config import finn_hub, news_api
 import pandas as pd
 from datetime import date, timedelta, datetime
 import time
@@ -11,6 +11,7 @@ import csv
 ## THIS class requests unfiltered data from Finn Hubb
 
 #i do not like 
+# ^ does it have to be a class? why have class? seems like unnecessary overhead, without much benefits
 ##consider how to avoid replacing certain parameters current vs. historical data search
 #concern solved = both calls have count instead of to/from (parallelism), so I can use the same calls for different functions, like hot exit or auto entry 
 class Finn_Hub_API_Calls:
@@ -156,6 +157,7 @@ class Finn_Hub_API_Calls:
 		elif (date.today().isoweekday() == 7):
 			timestamp -= 86400 # subbing 1 day to account for saturday
 
+
 		payload = { 'symbol' : open_order_info,
 				'resolution' : '60',
 				'token' : finn_hub,
@@ -170,7 +172,11 @@ class Finn_Hub_API_Calls:
 		if day['s'] == 'no_data':
 			return
 	
-		time_of_last_min = int(day['t'].index(timestamp))
+		#if can't find the value of the last days 3pm
+		try:
+			time_of_last_min = int(day['t'].index(timestamp))
+		except:
+			return
 
 		# a lof of data is returning for a whole month for some reason,
 		# so i specify that I want to find from a specific hour
@@ -178,5 +184,30 @@ class Finn_Hub_API_Calls:
 		prev_day_now_close = {'prev' : day['c'][time_of_last_min],
 							  'now' : day['c'][-1]}
 
-
 		return prev_day_now_close
+
+
+	#getting news from 
+	def news_ticker(self, a_ticker, date):
+
+		convert_date = date.isoformat()
+
+		endpoint = "https://newsapi.org/v2/everything?q={}".format(a_ticker)
+
+		params = { 'apiKey' : news_api,
+				   'from' : convert_date,
+				   'domains' : 'yahoo.com',
+				   'language' : 'en'
+
+		}
+
+		content = requests.get(url = endpoint, params = params)
+
+		news = content.json()
+
+		try:
+			news = news['articles'][0]['title']
+		except:
+			return
+
+		return news 
