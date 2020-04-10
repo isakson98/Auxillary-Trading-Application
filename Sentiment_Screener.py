@@ -28,9 +28,7 @@ class Sentiment_Screener:
 		self.auth_url = None
 		self.second_time_writing = False
 
-		# #create a new instance of the chrome browser
-		# executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
-		# self.browser = Browser('chrome', **executable_path, headless = True )
+		# ^ create a new instance of the chrome browser
 
 	#the first time launching the program
 	def authorize_stock_twit(self):
@@ -135,15 +133,6 @@ class Sentiment_Screener:
 		self.list_of_names.clear()
  
 	
-	# things to consider in development 
-	# 1) when will i write the new stocks in? - so far i can only do it once a day
-	# 2) what happens when I run the program twice in the day? will tickers be replaced or held the same? - held the same for now
-	# 3) when will I check news for those stocks and will i do it repeatedly? - thats up to you, i can retrieve tickers any time (need to build a second option in console)
-	# 4) what will be the process of deleting last date and its tickers? - from recent and down. deleting tail if > 20 tickers
-	# 5) how will I cap number of stocks? go from api limit, but will I keep calender or just count of 20 days ex. - my api is maxed at 60 calls a minute, so 3 tickers * 20 days at once
-	# 6) will I have to run this program every day? what happens if miss? - looks like for whatever days I miss, I'll add myself manually
-
-
 	# this function writes todays trending stocks into a csv, which holds last 20 trading days
 	# it moves data from a file into a dataframe, adds one row to the bottom, sorts df so that row gets to the top, and writes the completed df to the same file
 	# room for improvement:
@@ -196,6 +185,7 @@ class Sentiment_Screener:
 
 		list_for_news = []
 
+		#getting the three tickers
 		for ticker in recent_tickers.values:
 			list_for_news.append(ticker[1])
 			list_for_news.append(ticker[2])

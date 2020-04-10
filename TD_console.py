@@ -172,8 +172,6 @@ def start_hot_exit(token):
 
 
 
-
-
 #AUTOMATED finder of order id
 # i need to find the order id to delete the stop loss order in case I need to initiate a hot exit order
 def find_risk_exit_order_id():
@@ -194,8 +192,6 @@ def find_risk_exit_order_id():
 
 	print("No active stop loss orders found")
 	return 
-
-
 
 
 
@@ -226,18 +222,12 @@ def start_cold_entry():
 	#sending a 1:2 R/R
 	TD.sending_oco(final_r_r)
 
-
-	# for using hot exit
-	#TD.sending_cold_ENTRY_order(final_r_r) temp
-	#TD.sending_RISK_exit_order(final_r_r) temp
-	#start_hot_exit(1) temp
-
 	return 0
 
 #
 def repeat_trending_stocks():
 
-	print("Review [1] current trading or [2] recent trading")
+	print("Review current trending [1] or recent trending [2]")
 	options = input()
 
 	#if option is one, use StockTwit api to get currently trading
@@ -261,9 +251,10 @@ def model_init():
 	print("Enter ticker symbol: ")
 	name = input()
 
-	print("Enter date to analyze (yyyy-mm-dd') or write [now] for today: ")
+	print("Enter date (yyyy-mm-dd') or [now] for today to analyze: ")
 	date = input()
 
+	#now means i need to get todays date and format it 
 	if date == "now":
 		today_date = datetime.date(datetime.now())
 		date = today_date.isoformat()
