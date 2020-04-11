@@ -318,8 +318,8 @@ class Risk_Reward:
 
 	# TECHNICAL ANALYSIS ASPECT BEHIND THE FUNCTION:
 	# I am calculating MACD histogram fields. I want to enter in a red field that has a closer candle to 0 than previous,
-	# and I want this previous candle to be smaller than the highest candle of the previous green field (in absolute terms)
-	# At the same time, I want rsi to be lower than 67.5, so I am not buying something overextended, despite macd 
+	# and I want the previous red candle to be smaller than the highest candle of the previous green field (in absolute terms)
+	# At the same time, I want rsi to be lower than 67.5, so I am not buying something overextended, despite macd signal
 
 	def cold_entry(self, ticker, simulation, a_iteration):
 
@@ -330,11 +330,10 @@ class Risk_Reward:
 			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
 
 		#only need to collect this data once for simulation. It will be saved from then on
-		#Either live or simulation -> both need to access these indicator calculations
+		#Either live or simulation -> both need to access these indicator calculations at least once
 		if simulation == 0 or (simulation == 1 and 'Macd' not in self.data_pd.columns):
 			#macd
 			indicator_macd = ta.trend.MACD(close=self.data_pd["Close"], n_slow = 26, n_fast = 12, n_sign = 9)
-			#print(indicator_macd)
 			self.data_pd['Macd'] = round(indicator_macd.macd_diff(),4)
 
 			##RSI indicator
@@ -342,24 +341,20 @@ class Risk_Reward:
 			self.data_pd['RsiClose14'] = indicator_rsi.rsi()
 			
 
-		# will iterate through one negative macd before my test candle (which is supposed to be the start of green field) and one positive macd before that
-		# i want to see the highest bar in green to be higher than the lowest bar in red (absolute value)
+		# initizaliing variables that will be compared to
+		# i do not want a_iteration variable changed, so i reassigned it
 		iterations_v2 = a_iteration
 		lowest_macd = 0.0000 #this will remain 0.00 in case the previous
 		highest_macd = -0.0001
 		
-		#BASIC GIST OF THINGS -> 
-		#iterating while current is in red and less then the previous candle (sign of strength)
-		#comparing to the previous green field
-		#the current histogram bar has to be red
-
-		if self.data_pd['Macd'].iloc[iterations_v2] > 0.0000:
+		#if macd is positive "i will send it back"
+		if self.data_pd['Macd'].iloc[iterations_v2] > 0.0000 and self.data_pd['Macd'].iloc[iterations_v2 - 1] > 0.0000:
 			return False
 		
 		
-		#if current higher than prev and prev is lower than prevprev
-		cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] and self.data_pd['Macd'].iloc[iterations_v2] <= 0.0000
-		cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] and self.data_pd['Macd'].iloc[iterations_v2 -1] < 0.0000
+		#current must be higher than prev and prev must be lower than prev-prev
+		cond1 = self.data_pd['Macd'].iloc[iterations_v2] > self.data_pd['Macd'].iloc[iterations_v2 - 1] 
+		cond2 = self.data_pd['Macd'].iloc[iterations_v2 - 1] < self.data_pd['Macd'].iloc[iterations_v2 - 2] 
 		cond3 = self.data_pd['Macd'].iloc[iterations_v2 - 2] < 0.0000
 		
 		if cond1 and cond2 and cond3:
@@ -367,7 +362,7 @@ class Risk_Reward:
 		else:
 			return False
 		
-		#comparing in the red histogram field the current bar to the previous
+		#finding the lowest bar in current macd field
 		while self.data_pd['Macd'].iloc[iterations_v2] <= 0.0000:
 			#if in the same red field the current is closer to 0 then prev- > not interested 
 			if self.data_pd['Macd'].iloc[iterations_v2] < lowest_macd:
@@ -375,14 +370,13 @@ class Risk_Reward:
 			iterations_v2 -= 1
 			
 		#keeping the same counter to start iterating through the green field
-		#going through green, previous to the red field
+		#finding the biggest value in the previous green MACD field 
 		while self.data_pd['Macd'].iloc[iterations_v2] >= 0.0000:
 			if self.data_pd['Macd'].iloc[iterations_v2] > highest_macd:
 				highest_macd = self.data_pd['Macd'].iloc[iterations_v2]
 			iterations_v2 -=1 
 
-
-		#if the previous green field's highest candle is smaller than the lowest candle of previous red field
+		#if the previous green field's highest candle is smaller than the lowest candle of current red field
 		# I do not want to engage
 		if abs(highest_macd) < abs(lowest_macd):
 			return False
@@ -401,12 +395,12 @@ class Risk_Reward:
 		answer = '0'
 		if simulation == 0:
 			while True:
-				print("Select the stop loss [1] 20 min low, [2] candle ATR: ")
+				print("Select the stop loss [1] 20 min low, [2] candle ATR, [3] 8 ema/10 ema 5 min: ")
 				answer = input()
-				if (answer != '1') or (answer != '2'):
+				if (answer != '1') or (answer != '2') or  (answer != '3'):
 					break
 		
-		# if its a simulation calculating 20 by default
+		# if its a simulation calculating 5 min ema by default
 		elif simulation == 1:
 			answer = '3'
 
@@ -416,11 +410,10 @@ class Risk_Reward:
 			self.cold_entry_risk_reward_atr(a_iteration, simulation)
 		elif answer == '3':
 			self.cold_entry_risk_reward_5_emas(a_iteration, simulation)
-
 			
 		return True
 
-	## FIRST TYPE OF RISK DEFINITION
+	## FIRST TYPE OF RISK DEFINITION for cold entry
 	# in case of using macd as the entry signal, the stop loss will be the lowest low in the last 15 minutes
 	# same case in this function, passing the starting point, same as in the cold entry function
 	# a_iteration = -1 in real time trading
@@ -452,7 +445,7 @@ class Risk_Reward:
 
 		return True
 	
-	## FIRST TYPE OF RISK DEFINITION
+	## SECOND TYPE OF RISK DEFINITION for cold entry
 	## this function calculates risk for a one-minute cold entry
 	## using atr-type strategy, 
 	def cold_entry_risk_reward_atr(self, a_iteration, simulation):
@@ -477,7 +470,6 @@ class Risk_Reward:
 		    up = hl2 - (Factor * atr)
 		    up = round(up,2)
 
-
 		    if self.data_pd['Up'].iloc[iterations-1] == 0:
 		        up1 = up
 		    else:
@@ -490,8 +482,6 @@ class Risk_Reward:
 
 		    iterations += 1
 
-
-		# ^ why do i have iterations here?
 		risk = 0
 		# if the last Low is lower than chandelier, I want my stop loss to be below Low
 		if self.data_pd['Up'].iloc[iterations-1] > self.data_pd['Low'].iloc[iterations-1]:
@@ -499,10 +489,10 @@ class Risk_Reward:
 		else:
 			risk = self.data_pd['Up'].iloc[iterations-1] - 0.04
 
+		#calculating risk / reward  and shares
 		reward = self.data_pd['High'].iloc[iterations-1] + ((self.data_pd['High'].iloc[iterations-1] - risk) * 2)
 
 		shares = round(Money_to_Risk / (self.data_pd['High'].iloc[iterations-1] - risk) * 2)
-
 
 		self.risk_reward_setup ={'risk': risk,
 								 'reward' : reward, 
@@ -515,23 +505,34 @@ class Risk_Reward:
 		return True
 
 
-	## THIRD TYPE OF RISK DEFINITION
+	## THIRD TYPE OF RISK DEFINITION for cold entry
 	# this risk will be based on 5 min 8 ema or 20 ema
-	# if close > 8 ema and abs(high - low) >= abs(low - close) = risk current 8 ema
-	# if close > 8 ema and abs(high - low) < abs(low - close) = risk 20 ema
-	# if close < 8 ema = risk current 20 ema
+	# if 1 min close > 8 ema and abs(1 min high - 1min low) >= abs(1min low -1min close) = risk current 8 ema
+	# if 1min close > 8 ema and abs(1min high - 1min low) < abs(1min low - 1min close) = risk 20 ema
+	# if 1min close < 8 ema = risk current 20 ema
 	def cold_entry_risk_reward_5_emas(self, a_iteration, simulation):
-# ^ find a way to convert current 1min index into the index of 5 min dataframe
 
-		print(self.data_pd['Timestamp'].iloc[a_iteration])
-		print(a_iteration)
-		#getting five minute indeces
+		# saving 1 min index for calculating time before 5 min manipulation with it
+		one_min_iteration = a_iteration
+
+		#calculating current five min bar start
+		time_5_min = self.data_pd['Timestamp'].iloc[a_iteration]
+		time_5_min = time_5_min - time_5_min % 300 
+
+
+		# converting current 1 min index into the index of 5 min dataframe
+		min_5_index = 0
 		if simulation == 1:
-			a_iteration = self.five_min_data[self.five_min_data['Timestamp'].index.values]
-		print(a_iteration)
-		print(self.five_min_data['Timestamp'].iloc[a_iteration])
+			for current_5_min in self.five_min_data['Timestamp']:
+				#print("current 5 min: ",current_5_min)
+				if ( current_5_min == time_5_min):
+					break
+				min_5_index += 1
+			a_iteration = min_5_index
+
 
 		#steps in if real trading 
+		#requests five min data, calculates emas
 		if simulation == 0:
 			self.five_min_data = FH_N.five_min_data_csv(self.open_order_info)
 			ema_8 = ta.trend.EMAIndicator(close = self.five_min_data['Close'], n=8)
@@ -540,6 +541,7 @@ class Risk_Reward:
 			self.five_min_data['ema_20'] = round(ema_20.ema_indicator(), 2)
 
 		#steps in if first run in simulation
+		# calculates emas
 		elif (simulation == 1 and 'ema_8' not in self.five_min_data.columns):
 			ema_8 = ta.trend.EMAIndicator(close = self.five_min_data['Close'], n=8)
 			self.five_min_data['ema_8'] = round(ema_8.ema_indicator(), 2)
@@ -550,52 +552,52 @@ class Risk_Reward:
 		extended = abs(self.five_min_data['ema_8'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) and abs(self.five_min_data['High'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) 
 		final_extended = extended and self.five_min_data['Low'].iloc[a_iteration] > self.five_min_data['ema_8'].iloc[a_iteration]
 
+		
+		#using current 1 min high for calculations
+		current_1_min = self.data_pd['High'].iloc[one_min_iteration]
 		risk = 0
 		reward = 0
-		
+
 		# in case 5 min is overextended
 		if final_extended:
 			risk = self.five_min_data['ema_8'].iloc[a_iteration] - 0.04
-			reward = abs(self.five_min_data['Close'].iloc[a_iteration] - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + self.five_min_data['Close'].iloc[a_iteration]
+			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
 		#in case 5 min is not overextended
 		else:
 			risk = self.five_min_data['ema_20'].iloc[a_iteration] - 0.04
-			reward = abs(self.five_min_data['Close'].iloc[a_iteration] - self.five_min_data['ema_20'].iloc[a_iteration]) * 2 + self.five_min_data['Close'].iloc[a_iteration]
+			reward = abs(current_1_min - self.five_min_data['ema_20'].iloc[a_iteration]) * 2 + current_1_min
 
-		shares = round(Money_to_Risk / (self.data_pd['High'].iloc[a_iteration] - risk) * 2)
+		shares = round(Money_to_Risk / (current_1_min - risk), 2)
 
 		self.risk_reward_setup ={'risk': risk,
 								 'reward' : reward, 
 								 'shares' : shares, 
 								 'ticker' : self.open_order_info['ticker']}
 
-		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now, self.five_min_data['ema_20'].iloc[a_iteration]) 
-
-
-
-
-
+		time_now = self.sec_into_time_convert(one_min_iteration)
+		print("R/R based on entry: ", self.risk_reward_setup, time_now) 
 
 
 
 
 
 	#not safe against DAY TIME SAVINGS and HALTS ??
-	#this function iterates through every minute of a specified stock between 9:30 (+some pre market) and 13:00
-	#and records cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
+	#this function iterates through every minute of a specified stock between 9:30 (+some pre market) and 13:00 on a specified date
+	#and prints out cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
 	#this is a powerful function because it should accomodate every strategy I map out for any stock
-	#this would allow me to see results of my strategy in the past (past 30 day limit which TradingView imposes)
-	def run_through_model(self, name, date):
+	#this would allow me to see results of my strategy in the past (past 30 day limit which FinnHub imposes)
+	def run_through_model(self, a_name, a_date):
+
 		#specifying the start time (seconds, which backtracks a hundred candles and a whole day) 
 		# beware of the GMT TIME DIFFERENCE SAVINGS LIGHT
-		dates = pd.to_datetime([date])
+		dates = pd.to_datetime([a_date])
 		second = (dates - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s') 
 		
+		#adds 9:30 hours to the date
 		self.open_order_info['time'] = second[0] + 48600
-		self.open_order_info['ticker'] = name
+		self.open_order_info['ticker'] = a_name
 		
-		#used for entry
+		#used for entry calculation
 		self.data_pd = FH_N.one_min_data_simulation(self.open_order_info)
 		#used for stop loss calculation 
 		self.five_min_data = FH_N.five_min_data_simulation(self.open_order_info)
@@ -607,20 +609,18 @@ class Risk_Reward:
 		index_time = self.data_pd.index[self.data_pd['Timestamp'] == nine_30]
 		start_time = index_time[0]
 		
-		
-		one_00 = nine_30 + 12600 - 120# adding to 1pm  temp subtraction cause of a bug, which does not return last values
+		# adding to 1pm  temp subtracting 2 minutes cause of a bug, which does not return last values without subtracting
+		one_00 = nine_30 + 12600 - 120
 		#finding the index of 1 PM
-		
 		index_finish_time = self.data_pd.index[self.data_pd['Timestamp'] == one_00]
-		#taking the int element
+		#taking the int element of the list that it provides
 		finish_time = index_finish_time[0]
 		
 		while start_time != finish_time: 
-			#self.hot_exit(1, start_time)
+			#self.hot_exit(1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
 			self.cold_entry(self.open_order_info['ticker'], 1, start_time)
 			start_time +=1
-
-		
+	
 		return 0
 
 
