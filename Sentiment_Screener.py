@@ -192,9 +192,18 @@ class Sentiment_Screener:
 
 		#getting the three tickers
 		for ticker in recent_tickers.values:
-			list_for_news.append(ticker[1])
-			list_for_news.append(ticker[2])
-			list_for_news.append(ticker[3])
+			try:
+				list_for_news.append(ticker[1])
+			except:
+				pass
+			try:
+				list_for_news.append(ticker[2])
+			except:
+				pass
+			try:
+				list_for_news.append(ticker[3])
+			except:
+				pass
 
 
 		today_date = datetime.date(datetime.now())

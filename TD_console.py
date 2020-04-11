@@ -220,7 +220,7 @@ def start_cold_entry():
 	final_r_r = fox.risk_reward_setup
 
 	#sending a 1:2 R/R
-	TD.sending_oco(final_r_r)
+	#TD.sending_oco(final_r_r) temp
 
 	return 0
 
