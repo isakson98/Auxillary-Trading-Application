@@ -1,13 +1,15 @@
-# Long_Intraday_Trend_Model
+# Auxillary-Trading-Application
 
-This project is a direct attempt to automate as much of my trading decisions as I see fit under different circumstances. It still needs a lot of supervision, like telling which stocks to trade and what the risk is for a trade, like in automatic entry
+This is a multipurpose repository to facilitate trading. It can be used for semi-autonomous and fully autonomous trading, for checking recent orders on brokerage platform, for as well as for simulating trading in the past runners.
 
 This program allows me autonomously to:
 1) exit a trade based on a crude 1:2 reward (after manual entry)
 2) exit a trade using overextended indicators (after manual or autonomous entry)
-3) enter a trade and exit am intraday trending stock (after manually analyzing a stock and determining it's fit for a strategy)
+3) enter a trade and exit intraday trending stock (after manually analyzing a stock and determining it's fit for a strategy)
 4) a) scan through trending stocks based StockTwits Trending feed and filer them to show in-play long potentials
-   b) check for today's news of the 60 stocks in play of the last 20 sessions
+   b) check for today's news of 60 in play stocks of the last 20 sessions
+   
+ # 5) check strategies on recent stock runners, taken from the same file as recent runners, and post results of each automatic entry, whether it was profitable or not. Also would be nice to see an advanced graph, where I can click  
 
 This program also now supports simulations for different technical analysis functions defined in Risk_Reward.py file (manual date and ticker name)
 
