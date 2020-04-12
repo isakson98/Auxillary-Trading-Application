@@ -9,6 +9,7 @@
 # 4. It is also capable of running simulations on intraday basis if ticker and date are specified
 
 import FH_News_API_Calls as FH_N
+from TD_API_Calls import TD_price_history
 from datetime import datetime
 from dateutil import parser
 import time 
@@ -551,7 +552,7 @@ class Risk_Reward:
 			self.five_min_data['ema_20'] = round(ema_20.ema_indicator(), 2)
 
 		# if close > 8 ema and abs(high - low) >= abs(low - close) = risk current 8 ema
-		extended = abs(self.five_min_data['ema_8'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) and abs(self.five_min_data['High'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) 
+		extended = abs(self.five_min_data['ema_8'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) >= abs(self.five_min_data['High'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) 
 		final_extended = extended and self.five_min_data['Low'].iloc[a_iteration] > self.five_min_data['ema_8'].iloc[a_iteration]
 
 		
@@ -559,6 +560,9 @@ class Risk_Reward:
 		current_1_min = self.data_pd['High'].iloc[one_min_iteration]
 		risk = 0
 		reward = 0
+
+#^ add if current 5 min low is below 20 min
+#^ consider the condition to be macd >= previous red one (equal as well)
 
 		# in case 5 min is overextended
 		if final_extended:
@@ -571,15 +575,13 @@ class Risk_Reward:
 
 		shares = round(Money_to_Risk / (current_1_min - risk), 2)
 
-		self.risk_reward_setup ={'risk': risk,
-								 'reward' : reward, 
+		self.risk_reward_setup ={'risk': round(risk, 2),
+								 'reward' : round(reward, 2) , 
 								 'shares' : shares, 
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(one_min_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now) 
-
-
+		print("R/R based on entry: ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
 
 
 
@@ -600,9 +602,9 @@ class Risk_Reward:
 		self.open_order_info['ticker'] = a_name
 		
 		#used for entry calculation
-		self.data_pd = FH_N.one_min_data_simulation(self.open_order_info)
+		self.data_pd = TD_price_history(self.open_order_info['ticker'], self.open_order_info['time'], 1)
 		#used for stop loss calculation 
-		self.five_min_data = FH_N.five_min_data_simulation(self.open_order_info)
+		self.five_min_data = TD_price_history(self.open_order_info['ticker'], self.open_order_info['time'], 5)
 
 		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
@@ -619,20 +621,8 @@ class Risk_Reward:
 		finish_time = index_finish_time[0]
 		
 		while start_time != finish_time: 
-			self.hot_exit(a_name, 1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
+			#self.hot_exit(a_name, 1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
 			self.cold_entry(a_name, 1, start_time)
 			start_time +=1
 	
 		return 0
-
-
-	## concern -> include saved AND opened orders and be able to delete EITHER one of them as well
-	## make it possible to look at two stocks at the same time (more than one) threading?
-	## build a simulation class which can track profit or loss, not just entries
-	## store cold entry + hot exit results on a minute bases and record in a separate dataframe, save it as a file with a name 
-	## use AWS for password protection
-
-
-	## 1)  multithreading -> build a GUI with two terminal windows which allow to have to processes at the same time
-	## 2)  easy level would be to allow two threads to work on two different files (sentiment screener and cold entry)
-	## 3)  medium level would be allowing two cold entries (I would need to create two object of the same file, obv)

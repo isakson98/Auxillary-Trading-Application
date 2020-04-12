@@ -67,7 +67,7 @@ def one_min_data_simulation(open_order_info):
 	backtrack =  open_order_info['time'] - 3000  # subbing 15 candles
 	end_of_strat = backtrack + 12600 + 3000  #ending at 1 pm (+2.5 hours + 100 minutes)
 	# print(backtrack)
-	print("end of ", end_of_strat)
+	#print("end of ", end_of_strat)
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
 	payload = { 'symbol' : open_order_info['ticker'],
@@ -140,10 +140,10 @@ def five_min_data_simulation(open_order_info):
 	#going back 100 minutes (candles) to get accurate RSI for the first candle
 	#subbing 4 hours cause its UTX and we in est
 	#and adding 9:30 hours to get the open time
-	backtrack =  open_order_info['time'] - 3000  # subbing 15 candles
+	backtrack =  open_order_info['time'] - 3000   # subbing 15 candles #subbing more to show 20 ema calc earlier
 	end_of_strat = backtrack + 12600 + 3000  #ending at 1 pm (+2.5 hours + 100 minutes)
 	# print(backtrack)
-	print("end of ", end_of_strat)
+	#print("end of ", end_of_strat)
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
 	payload = { 'symbol' : open_order_info['ticker'],
