@@ -75,16 +75,16 @@ class Risk_Reward:
 				received_order_info['price'] = opening['orderActivityCollection'][0]['executionLegs'][0]['price']
 				if self.check_if_open_order_old(received_order_info) == True:
 					print("No new orders")
-					return False
+					return "None"
 				else:
 					winsound.Beep(1000, 980)
 					self.open_order_info = received_order_info
-					print("Found new opened order: {}".format(self.open_order_info))
-					self.push_new_orders_in_file(self.open_order_info)
-					return True
+					print("Found new opened order: {}".format(received_order_info))
+					self.push_new_orders_in_file(received_order_info)
+					return received_order_info['ticker']
 
 		print("No new orders")
-		return False
+		return "None"
 
 	#formatting function
 	#converting 2020-03-18T15:24:09+0000 into epoch time (milliscons), for -> TD and finn hub api send request
@@ -104,8 +104,8 @@ class Risk_Reward:
 
 	# for manually entered trades
 	# calculates 1 Risk / 2 Reward ratio, basing the risk off of either the current or previous lowest 5 min low
-	def five_min_calc_r_r(self): #3.0
-		self.five_min_data = FH_N.five_min_data(self.open_order_info)
+	def five_min_calc_r_r(self, stock_ticker): #3.0
+		self.five_min_data = FH_N.five_min_data(stock_ticker)
 		self.time_conversion_retrieved_into_send()
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 # - 14400 #adjusting to seconds and local time
@@ -135,9 +135,9 @@ class Risk_Reward:
 	# for manually entered trades
 	# calculates 1 Risk / 2 Reward ratio, basing the risk off of the lowest low in 3-6 minute pullback (excluding the highest candle's low)
 	# returns a dictionary with final values to close the trade at, ticker name, and # of shares bought in the opening trade
-	def one_min_calc_r_r(self): #3.0
+	def one_min_calc_r_r(self, stock_ticker): #3.0
 
-		self.one_min_data = FH_N.one_min_data(self.open_order_info)
+		self.one_min_data = FH_N.one_min_data(stock_ticker)
 		self.time_conversion_retrieved_into_send() 
 
 		test_candle_time = self.open_order_info['time'] / 1000  - 60 #- 14400 #adjusting to seconds and local time
@@ -171,6 +171,8 @@ class Risk_Reward:
 		print("Calculated 1 min R/R: ", self.risk_reward_setup)
 		return self.risk_reward_setup
 
+########################################################################################################################################################################
+# purely discretionary until this point
 
 	# PROGRAMMING ASPECT BEHIND THE FUNCTION:
 	#this is a multipurpose function
@@ -186,7 +188,7 @@ class Risk_Reward:
 	# finding the candles that when they are oversold, they have a small probability of going up
 	# process behind it -> keep indicators overextended but not too much. 
 	# instead add more different specifications to have more accurate results
-	def hot_exit(self, simulation, a_iteration):
+	def hot_exit(self, ticker, simulation, a_iteration):
 
 
 		#initializing in scope, so I can access later
@@ -194,7 +196,7 @@ class Risk_Reward:
 
 		# keeping these separate becasuse I am creating local smaller dataframes for real time trading to increase performance
 		if simulation == 0:
-			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
+			self.data_pd = FH_N.one_min_data_csv(ticker)
 
 			# if the price has not reached 2X Reward, oversold != need to exit
 			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
@@ -397,7 +399,7 @@ class Risk_Reward:
 			while True:
 				print("Select the stop loss [1] 20 min low, [2] candle ATR, [3] 8 ema/10 ema 5 min: ")
 				answer = input()
-				if (answer != '1') or (answer != '2') or  (answer != '3'):
+				if (answer == '1') or (answer == '2') or  (answer == '3'):
 					break
 		
 		# if its a simulation calculating 5 min ema by default
@@ -409,7 +411,7 @@ class Risk_Reward:
 		elif answer == '2':
 			self.cold_entry_risk_reward_atr(a_iteration, simulation)
 		elif answer == '3':
-			self.cold_entry_risk_reward_5_emas(a_iteration, simulation)
+			self.cold_entry_risk_reward_5_emas(a_iteration, simulation, ticker)
 			
 		return True
 
@@ -510,7 +512,7 @@ class Risk_Reward:
 	# if 1 min close > 8 ema and abs(1 min high - 1min low) >= abs(1min low -1min close) = risk current 8 ema
 	# if 1min close > 8 ema and abs(1min high - 1min low) < abs(1min low - 1min close) = risk 20 ema
 	# if 1min close < 8 ema = risk current 20 ema
-	def cold_entry_risk_reward_5_emas(self, a_iteration, simulation):
+	def cold_entry_risk_reward_5_emas(self, a_iteration, simulation, ticker):
 
 		# saving 1 min index for calculating time before 5 min manipulation with it
 		one_min_iteration = a_iteration
@@ -534,7 +536,7 @@ class Risk_Reward:
 		#steps in if real trading 
 		#requests five min data, calculates emas
 		if simulation == 0:
-			self.five_min_data = FH_N.five_min_data_csv(self.open_order_info)
+			self.five_min_data = FH_N.five_min_data_csv(ticker)
 			ema_8 = ta.trend.EMAIndicator(close = self.five_min_data['Close'], n=8)
 			self.five_min_data['ema_8'] = round(ema_8.ema_indicator(), 2)
 			ema_20 = ta.trend.EMAIndicator(close = self.five_min_data['Close'], n=20)
@@ -617,8 +619,8 @@ class Risk_Reward:
 		finish_time = index_finish_time[0]
 		
 		while start_time != finish_time: 
-			#self.hot_exit(1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
-			self.cold_entry(self.open_order_info['ticker'], 1, start_time)
+			self.hot_exit(a_name, 1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
+			self.cold_entry(a_name, 1, start_time)
 			start_time +=1
 	
 		return 0
