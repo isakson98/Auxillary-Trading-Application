@@ -1,6 +1,6 @@
 # Auxillary-Trading-Application
 
-This is a multipurpose repository to facilitate trading. It can be used for semi-autonomous and fully autonomous trading, for checking recent orders on brokerage platform, for as well as for simulating trading in the past runners.
+This is a multipurpose application to facilitate trading. It can be used for semi-autonomous and fully autonomous trading, for checking recent orders on brokerage platform, for as well as for simulating trading in the past runners.
 
 This program allows me autonomously to:
 1) exit a trade based on a crude 1:2 reward (after manual entry)
