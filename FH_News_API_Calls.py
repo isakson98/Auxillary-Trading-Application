@@ -170,6 +170,7 @@ def five_min_data_simulation(open_order_info):
 
 
 #for filtering through data coming from stock twits
+# ^ not adjsuted for holidays
 # i need to access 3pm of last trading day to compare %change.
 # using hourly data as that is going to be the shortest intraday json
 def prev_day_data(open_order_info):
@@ -181,14 +182,17 @@ def prev_day_data(open_order_info):
 	#converting yesterdays date to unix seconds and adding 15 hours, going to get the close value of the power hour 
 	timestamp = time.mktime(time.strptime(str(yesterday), '%Y-%m-%d'))
 	timestamp += 54000
+
 	#mondays
 	if (date.today().isoweekday() == 1):
-		timestamp -= 172800 # subbing two days to account for saturday and sunday
+		timestamp -= 172800 # subbing two days to account for saturday and sunday 
+		#timestamp -= 86400 # for holidays # temp
 
 	#sunday
 	elif (date.today().isoweekday() == 7):
 		timestamp -= 86400 # subbing 1 day to account for saturday
 
+	print(timestamp)
 
 	payload = { 'symbol' : open_order_info,
 			'resolution' : '60',
@@ -208,6 +212,7 @@ def prev_day_data(open_order_info):
 	try:
 		time_of_last_min = int(day['t'].index(timestamp))
 	except:
+		print("returned")
 		return
 
 	# a lof of data is returning for a whole month for some reason,
