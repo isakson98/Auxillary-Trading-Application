@@ -29,6 +29,8 @@ class Sentiment_Screener:
 		# ^ create a new instance of the chrome browser
 
 	#the first time launching the program
+	# 1) first part is selenium
+	# 2) second part is gettin the token
 	def authorize_stock_twit(self):
 
 		#create a new instance of the chrome browser
@@ -62,17 +64,13 @@ class Sentiment_Screener:
 
 		auth_code = urllib.parse.unquote(new_url.split('code=')[1])
 
-		self.auth_code = auth_code
-
 		#browser.quit()
-
-	# getting an access token which is required for the api call i am going to make later
-	def get_access_token(self):
-
+		
+		### getting the token 
 		endpoint = "https://api.stocktwits.com/api/2/oauth/token" 
 
 		payload = { 'client_id' : st_client_id,
-					'code' : self.auth_code,
+					'code' : auth_code,
 					'grant_type' : 'authorization_code',
 					'client_secret' : st_client_secret,
 					'redirect_uri' : "https://www.tdameritrade.com/home.page"}
@@ -219,6 +217,5 @@ class Sentiment_Screener:
 	def all_in_one(self):
 
 		self.authorize_stock_twit()
-		self.get_access_token()
 		self.request_trending()
 		self.filter_trending()

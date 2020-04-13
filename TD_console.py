@@ -207,19 +207,27 @@ def start_cold_entry():
 	# ^ have a function that will upper case the value
 	#name_of_stock = name_of_stock.isupper()
 
-	starttime=round(time.time())
+	
 	# basically, from the amount of time you want you it to sleep
 	# you subtract how much is left before the next time it should ran in that sequence
 	# start the loop only when the current seconds 
 
 	while True:
+		time.sleep(1)
+		if round(time.time()) % 60 ==5:
+			break
+
+	starttime=round(time.time())
+	while True:
 		# simulation == 0 (not simulation), and -1 = index of current candle (last one in the df)
 		entry_complete = fox.cold_entry(name_of_stock, 0, -1)
 		if entry_complete == True:
 			break
+		t = time.localtime()
+		current_time = time.strftime("%H:%M:%S", t)
+		print(current_time)
+
 		time.sleep(60.0 - ((time.time() - starttime) % 60.0))
-
-
 	#part of sending the order
 	final_r_r = fox.risk_reward_setup
 

@@ -7,12 +7,7 @@ import json
 import csv
 
 
-## THIS class requests unfiltered data from Finn Hubb
-
-##consider how to avoid replacing certain parameters current vs. historical data search
-#concern solved = both calls have count instead of to/from (parallelism), so I can use the same calls for different functions, like hot exit or auto entry 
-
-
+## THIS class requests unfiltered data from Finn Hubb and filters it according to the needs of TA module and the code already in place for calc
 
 
 #for momentum
@@ -39,7 +34,7 @@ def one_min_data_csv(ticker):
 
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
-	payload = { 'symbol' : ticker,
+	payload = { 'symbol' : 'WORX', #ticker,
 				'resolution' : 1,
 				'count' : 90, #7 temp
 				'token' : finn_hub,
@@ -49,13 +44,14 @@ def one_min_data_csv(ticker):
 
 	one_min_data = content.text
 	data_pd = pd.read_json(one_min_data)
+
 	data_pd.drop(columns = ['s'], inplace = True)
 	data_pd.columns = ['Close','High', 'Low', 'Open', 'Timestamp' ,'Volume']
 	data_pd['Close'] = round(data_pd['Close'],2)
 	data_pd['High'] = round(data_pd['High'],2)
 	data_pd['Low'] = round(data_pd['Low'],2)
 	data_pd['Open'] = round(data_pd['Open'],2)
-
+	
 	return data_pd
 
 #for simulation
@@ -186,7 +182,7 @@ def prev_day_data(open_order_info):
 	#mondays
 	if (date.today().isoweekday() == 1):
 		timestamp -= 172800 # subbing two days to account for saturday and sunday 
-		#timestamp -= 86400 # for holidays # temp
+		timestamp -= 86400 # for holidays # temp
 
 	#sunday
 	elif (date.today().isoweekday() == 7):
@@ -242,9 +238,12 @@ def news_ticker(a_ticker, date):
 
 	news = content.json()
 
+	#ideally i need to find the name of the company and search that in the headline
+
 	try:
 		news = news['articles'][0]['title']
+		return news
 	except:
 		return
 
-	return news 
+ 

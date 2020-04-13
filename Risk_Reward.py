@@ -330,7 +330,7 @@ class Risk_Reward:
 		
 		#if I am doing real time trading, I need to request data every time I use this function 
 		if simulation == 0:
-			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
+			self.data_pd = FH_N.one_min_data_csv(ticker)
 
 		#only need to collect this data once for simulation. It will be saved from then on
 		#Either live or simulation -> both need to access these indicator calculations at least once
@@ -342,7 +342,8 @@ class Risk_Reward:
 			##RSI indicator
 			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
 			self.data_pd['RsiClose14'] = indicator_rsi.rsi()
-			
+		
+		print(self.data_pd['Timestamp'].iloc[a_iteration])
 
 		# initizaliing variables that will be compared to
 		# i do not want a_iteration variable changed, so i reassigned it
@@ -444,7 +445,7 @@ class Risk_Reward:
 								'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now ) 
+		print("R/R : ", self.risk_reward_setup, time_now ) 
 
 		return True
 	
@@ -503,7 +504,7 @@ class Risk_Reward:
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now ) 
+		print("R/R : ", self.risk_reward_setup, time_now ) 
 
 		return True
 
@@ -512,6 +513,7 @@ class Risk_Reward:
 	# this risk will be based on 5 min 8 ema or 20 ema
 	# if 1 min close > 8 ema and abs(1 min high - 1min low) >= abs(1min low -1min close) = risk current 8 ema
 	# if 1min close > 8 ema and abs(1min high - 1min low) < abs(1min low - 1min close) = risk 20 ema
+	# if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
 	# if 1min close < 8 ema = risk current 20 ema
 	def cold_entry_risk_reward_5_emas(self, a_iteration, simulation, ticker):
 
@@ -556,18 +558,35 @@ class Risk_Reward:
 		final_extended = extended and self.five_min_data['Low'].iloc[a_iteration] > self.five_min_data['ema_8'].iloc[a_iteration]
 
 		
-		#using current 1 min high for calculations
-		current_1_min = self.data_pd['High'].iloc[one_min_iteration]
+		#using current 1 min close for calculations cause im entering right after this candle finishes
+		current_1_min = self.data_pd['Close'].iloc[one_min_iteration]
 		risk = 0
 		reward = 0
 
-#^ add if current 5 min low is below 20 min
-#^ consider the condition to be macd >= previous red one (equal as well)
+		#if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
+		iterations_back = a_iteration
+		above_8ema = 0
+		while iterations_back != a_iteration - 4:
+			if self.five_min_data['Low'].iloc[iterations_back] > self.five_min_data['ema_8'].iloc[iterations_back]:
+				above_8ema += 1
+			iterations_back -= 1
+
 
 		# in case 5 min is overextended
 		if final_extended:
 			risk = self.five_min_data['ema_8'].iloc[a_iteration] - 0.04
 			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
+		#if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
+		elif above_8ema == 4:
+			risk = self.five_min_data['ema_8'].iloc[a_iteration] - 0.04
+			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
+		#if current 5min low is below 20 ema, risk is low of 5 min
+		elif self.five_min_data['ema_20'].iloc[a_iteration] > self.five_min_data['Low'].iloc[a_iteration]:
+			risk = self.five_min_data['Low'].iloc[a_iteration] - 0.04
+			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
 		#in case 5 min is not overextended
 		else:
 			risk = self.five_min_data['ema_20'].iloc[a_iteration] - 0.04
@@ -581,7 +600,7 @@ class Risk_Reward:
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(one_min_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
+		print("R/R : ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
 
 
 
