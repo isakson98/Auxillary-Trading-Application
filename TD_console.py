@@ -18,28 +18,30 @@ sent = Sentiment_Screener()
 #makes a call to risk_reward to calculatte
 def one_r_two_r_exit_placement():
 	##continue requesting the data for an opening trade until there is one
+	stock_ticker = None
 	try:
 		while True:
-		    history_orders = TD.retrieve_orders()
-		    if fox.checking_opening_positions(history_orders) == True:
-		        break
-		    time.sleep(2)
+			history_orders = TD.retrieve_orders()
+			stock_ticker = fox.checking_opening_positions(history_orders)
+			if stock_ticker != "None":
+				break
+			time.sleep(2)
 
 		#asking which r/r to employ, depending on the strategy
 		print("Choose the exit strategy [5] for 5 min R/R, [1] for 1 min R/R")
 		resp = 0
 		while True:
-		    resp = input() 
-		    if (resp == '5') or (resp == '1') or (resp == '0'):
-		        break
+			resp = input() 
+			if (resp == '5') or (resp == '1') or (resp == '0'):
+				break
 
 		#getting price data, parsing/calculating the R/R, placing the trade
 		if (resp == '5'):
-		    final_r_r = fox.five_min_calc_r_r() #retriving data from the r/r class
+			final_r_r = fox.five_min_calc_r_r(stock_ticker) #retriving data from the r/r class
 		elif (resp == '1'):
-		    final_r_r = fox.one_min_calc_r_r() #same deal here
+			final_r_r = fox.one_min_calc_r_r(stock_ticker) #same deal here
 		elif (resp == '0'):
-		    print("No action")
+			print("No action")
 
 		TD.sending_oco(final_r_r)
 
@@ -60,16 +62,16 @@ def check_opened_orders():
 	#order_id = data[0]['savedOrderId']
 	collection_of_orders = []
 	for order in data:
-	    order_data = { 'OrderId' : order['savedOrderId'], #change this temp 
-	                  'symbol' : order['orderLegCollection'][0]['instrument']['symbol'],
-	                  'instruction': order['orderLegCollection'][0]['instruction'],
-	                  'quantity' : order['orderLegCollection'][0]['quantity'],
-	                  'time' : order['savedTime']} #time
-	        
-	    collection_of_orders.append(order_data)
-	    
+		order_data = { 'OrderId' : order['savedOrderId'], #change this temp 
+						'symbol' : order['orderLegCollection'][0]['instrument']['symbol'],
+						'instruction': order['orderLegCollection'][0]['instruction'],
+						'quantity' : order['orderLegCollection'][0]['quantity'],
+						'time' : order['savedTime']} #time
+			
+		collection_of_orders.append(order_data)
+		
 	## list the orders in a eye-friendly manner
-	
+
 	date = parser.parse(order_data['time'], ignoretz = True)
 	est_hour = date.hour - 4
 	if est_hour < 0:
@@ -80,11 +82,11 @@ def check_opened_orders():
 	iteration = 1
 	print("Opened Orders: ")
 	for order in collection_of_orders:
-	    print(iteration,"->", order['symbol'], order['quantity'], order['instruction'], date)
-	    iteration +=1
+		print(iteration,"->", order['symbol'], order['quantity'], order['instruction'], date)
+		iteration +=1
 
 	collection_of_orders.append(iteration)
-#creating an extra element, which can create a crash if I choose the last element to delete cause it will be an iteration number     	
+	#creating an extra element, which can create a crash if I choose the last element to delete cause it will be an iteration number     	
 	return collection_of_orders
 
 
@@ -115,32 +117,34 @@ def delete_opened_orders():
 ##continue requesting the data for an opening trade until there is one
 def start_hot_exit(token):
 
+	stock_ticker = None
 	try:
 		#if token is zero, I entered the trade manually and need specify what strategy I am using 
 		resp = 0
 		if token == 0:
 			##find a placed order first 
 			while True:
-			    history_orders = TD.retrieve_orders()
-			    if fox.checking_opening_positions(history_orders) == True:
-			        break
-			    time.sleep(2)
+				history_orders = TD.retrieve_orders()
+				stock_ticker = fox.checking_opening_positions(history_orders)
+				if stock_ticker != "None":
+					break
+				time.sleep(2)
 
 			#asking which r/r to employ, depending on the strategy
 			print("Choose the exit strategy [5] for 5 min R/R, [1] for 1 min R/R, or [0] for no action")
 			while True:
-			    resp = input() 
-			    if (resp == '5') or (resp == '1') or (resp == '0'):
-			        break
+				resp = input() 
+				if (resp == '5') or (resp == '1') or (resp == '0'):
+					break
 
 			final_r_r = None
 			#getting price data, parsing/calculating the R/R, placing the 4trade
 			if (resp == '5'):
-			    final_r_r = fox.five_min_calc_r_r() #retriving data from the r/r class
+				final_r_r = fox.five_min_calc_r_r(stock_ticker) #retriving data from the r/r class
 			elif (resp == '1'):
-			    final_r_r = fox.one_min_calc_r_r() #same deal here
+				final_r_r = fox.one_min_calc_r_r(stock_ticker) #same deal here
 			elif (resp == '0'):
-			    print("No action")
+				print("No action")
 
 			TD.sending_RISK_exit_order(final_r_r) 
 
@@ -159,7 +163,7 @@ def start_hot_exit(token):
 			# start indicator 3 seconds before current minute ends
 			result = False
 			if round(time.time()) % 60 ==56:
-				result = fox.hot_exit(0, -1)
+				result = fox.hot_exit(stock_ticker, 0, -1)
 			if result == True:
 				TD.deleting_one_saved_order(order_info['Order_Id']) #temp
 				TD.sending_REWARD_exit_order(final_r_r) #temp
@@ -169,8 +173,6 @@ def start_hot_exit(token):
 	except KeyboardInterrupt:
 		print("Stop checking for opening positions")
 		print()
-
-
 
 
 
@@ -197,8 +199,6 @@ def find_risk_exit_order_id():
 
 
 
-
-
 ## this function prompts the user to name a ticker to trade
 def start_cold_entry():
 
@@ -206,7 +206,7 @@ def start_cold_entry():
 	name_of_stock = input()
 	# ^ have a function that will upper case the value
 	#name_of_stock = name_of_stock.isupper()
-	
+
 	starttime=round(time.time())
 	# basically, from the amount of time you want you it to sleep
 	# you subtract how much is left before the next time it should ran in that sequence
@@ -224,20 +224,14 @@ def start_cold_entry():
 	final_r_r = fox.risk_reward_setup
 
 	#sending a 1:2 R/R
-	TD.sending_oco(final_r_r)
-
-
-	# for using hot exit
-	#TD.sending_cold_ENTRY_order(final_r_r) temp
-	#TD.sending_RISK_exit_order(final_r_r) temp
-	#start_hot_exit(1) temp
+	#TD.sending_oco(final_r_r) temp
 
 	return 0
 
-#
+
 def repeat_trending_stocks():
 
-	print("Review [1] current trading or [2] recent trading")
+	print("Review current trending [1] or recent trending [2]")
 	options = input()
 
 	#if option is one, use StockTwit api to get currently trading
@@ -250,7 +244,7 @@ def repeat_trending_stocks():
 				sent.all_in_one()
 		except:
 			print("Exiting viewing trending stocks")
-	
+
 	#if 2, open csv with previously trading stocks, check for today's news
 	elif options == '2':
 		sent.read_filtered_and_news()
@@ -261,9 +255,10 @@ def model_init():
 	print("Enter ticker symbol: ")
 	name = input()
 
-	print("Enter date to analyze (yyyy-mm-dd') or write [now] for today: ")
+	print("Enter date (yyyy-mm-dd') or [now] for today to analyze: ")
 	date = input()
 
+	#now means i need to get todays date and format it 
 	if date == "now":
 		today_date = datetime.date(datetime.now())
 		date = today_date.isoformat()

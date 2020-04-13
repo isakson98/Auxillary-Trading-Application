@@ -5,10 +5,10 @@
 # i will have a command that will bring me 5 min updates
 #use finnhub to get current days close and yesterdays close to determine change %
 from Config import st_client_id, st_client_secret, st_twt_user, st_twt_pass
-from Finn_Hub_API_Calls import Finn_Hub_API_Calls
 from datetime import datetime
 from splinter import Browser
 from time import sleep
+import FH_News_API_Calls as FH_N
 import pandas as pd
 import requests
 import urllib
@@ -23,14 +23,10 @@ class Sentiment_Screener:
 		self.auth_code = None
 		self.access_code = None
 		self.list_of_names = []
-		self.finn_data = Finn_Hub_API_Calls()
 		self.filtered_stocks = []
-		self.auth_url = None
 		self.second_time_writing = False
 
-		# #create a new instance of the chrome browser
-		# executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
-		# self.browser = Browser('chrome', **executable_path, headless = True )
+		# ^ create a new instance of the chrome browser
 
 	#the first time launching the program
 	def authorize_stock_twit(self):
@@ -40,7 +36,6 @@ class Sentiment_Screener:
 		browser = Browser('chrome', **executable_path, headless = True )
 
 		#running the first time to get the url of the 
-		#if self.auth_url == None: #if statement start
 		endpoint = "https://api.stocktwits.com/api/2/oauth/authorize"
 
 		payload = {'client_id' : st_client_id,
@@ -53,9 +48,9 @@ class Sentiment_Screener:
 		#build the url
 		build_url = requests.Request(method, endpoint, params= payload).prepare()
 		build_url = build_url.url
-		self.auth_url = build_url #if statement end
+		build_url 
 			
-		browser.visit(self.auth_url)
+		browser.visit(build_url)
 
 
 		browser.find_by_id("user_session_login").fill(st_twt_user)
@@ -101,26 +96,34 @@ class Sentiment_Screener:
 
 		data = content.json()
 
-		for name in data['symbols']:
-			self.list_of_names.append(name['symbol'])
+		local_list = []
 
-		print(self.list_of_names)
+		for name in data['symbols']:
+			local_list.append(name['symbol'])
+		
+		self.list_of_names = local_list
+
+		print(local_list)
 
 	#passing all trending stocks throught finn hubb api to find gapped up stocks 
 	#change that you are comparing to close of 3:59 of the prev day.
 	def filter_trending(self):
 
+		local_filtered = []
+
 		for stock in self.list_of_names:
 			#returning a dict with two keys of last day's close and current price
-			data_d = self.finn_data.prev_day_data(stock)
+			data_d = FH_N.prev_day_data(stock)
 			try:
 				change = (data_d['now'] - data_d['prev']) / data_d['prev']
 				if change > 0.05:
-					self.filtered_stocks.append(stock)
+					local_filtered.append(stock)
 			except:
 				pass
 
-		print(self.filtered_stocks)
+		self.filtered_stocks = local_filtered
+
+		print(local_filtered)
 
 		
 		# want this operation run only once a day, but here safety only set for one run of the program
@@ -135,15 +138,6 @@ class Sentiment_Screener:
 		self.list_of_names.clear()
  
 	
-	# things to consider in development 
-	# 1) when will i write the new stocks in? - so far i can only do it once a day
-	# 2) what happens when I run the program twice in the day? will tickers be replaced or held the same? - held the same for now
-	# 3) when will I check news for those stocks and will i do it repeatedly? - thats up to you, i can retrieve tickers any time (need to build a second option in console)
-	# 4) what will be the process of deleting last date and its tickers? - from recent and down. deleting tail if > 20 tickers
-	# 5) how will I cap number of stocks? go from api limit, but will I keep calender or just count of 20 days ex. - my api is maxed at 60 calls a minute, so 3 tickers * 20 days at once
-	# 6) will I have to run this program every day? what happens if miss? - looks like for whatever days I miss, I'll add myself manually
-
-
 	# this function writes todays trending stocks into a csv, which holds last 20 trading days
 	# it moves data from a file into a dataframe, adds one row to the bottom, sorts df so that row gets to the top, and writes the completed df to the same file
 	# room for improvement:
@@ -196,15 +190,25 @@ class Sentiment_Screener:
 
 		list_for_news = []
 
+		#getting the three tickers
 		for ticker in recent_tickers.values:
-			list_for_news.append(ticker[1])
-			list_for_news.append(ticker[2])
-			list_for_news.append(ticker[3])
+			try:
+				list_for_news.append(ticker[1])
+			except:
+				pass
+			try:
+				list_for_news.append(ticker[2])
+			except:
+				pass
+			try:
+				list_for_news.append(ticker[3])
+			except:
+				pass
 
 
 		today_date = datetime.date(datetime.now())
 		for ticker in list_for_news:
-			article = self.finn_data.news_ticker(ticker, today_date)
+			article = FH_N.news_ticker(ticker, today_date)
 			if article != None:
 				print(ticker)
 				print(article)
