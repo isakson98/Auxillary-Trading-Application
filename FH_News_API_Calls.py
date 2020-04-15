@@ -1,10 +1,12 @@
-from Config import finn_hub, news_api
+from Config import finn_hub, news_api, yahoo_rap, yah_host
 import pandas as pd
 from datetime import date, timedelta, datetime
+from bs4 import BeautifulSoup
 import time
 import requests
 import json
 import csv
+import finviz
 
 
 ## THIS class requests unfiltered data from Finn Hubb and filters it according to the needs of TA module and the code already in place for calc
@@ -188,7 +190,7 @@ def prev_day_data(open_order_info):
 	elif (date.today().isoweekday() == 7):
 		timestamp -= 86400 # subbing 1 day to account for saturday
 
-	print(timestamp)
+	#print(timestamp)
 
 	payload = { 'symbol' : open_order_info,
 			'resolution' : '60',
@@ -220,16 +222,80 @@ def prev_day_data(open_order_info):
 	return prev_day_now_close
 
 
+#find companys name (maybe through a TD api call) and then use the name to search in the headline
+def FH_news(a_ticker):
+	endpoint = 'https://finnhub.io/api/v1/news'
+
+	payload = { 'symbol' : a_ticker}
+
+	content = requests.get(url = endpoint, params = payload)
+
+	news = content.json()
+
+	return news
+
+
+#using an api from the website, which is just as slow as what I am doing myself
+def yahoo_api(a_ticker):
+
+	endpoint = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/get-detail"
+
+	header = {
+		"x-rapidapi-host": yah_host,
+		"x-rapidapi-key": yahoo_rap
+	}
+
+	payload = { 
+		"region" : "US",
+		"lang" : "en",
+		"symbol" : a_ticker
+	}
+
+	content = requests.get(url = endpoint, headers = header, params = payload)
+
+	news = content.json()
+
+	return news['price']['shortName']
+
+
+# web scraping personall y from the yahoo website
+def yahoo_scraping(a_ticker):
+
+	endpoint = "https://finance.yahoo.com/quote/{}?p={}&.tsrc=fin-srch".format(a_ticker, a_ticker)
+
+	#request object
+	page = requests.get(endpoint)
+
+	#access text portion of the object -> page.text
+	soup = BeautifulSoup(page.text, 'html.parser')
+	
+	#grabbing tag and its content
+	ticker_name = soup.find('h1')
+
+	soup = BeautifulSoup((str(ticker_name)), features="lxml")
+	td = soup.find('h1')
+
+	# the format i am gettin is [TSLA - Tesla, Inc.]
+	ticker_name = td.contents[0]
+
+	ticker_name = ticker_name.split("- ")
+
+	ticker_name = ticker_name[1].split(',')
+
+	return ticker_name[0]
+
+
 #getting news from NewsAPI
+#using the name of the company in the title as query
 def news_ticker(a_ticker, date):
 
 	convert_date = date.isoformat()
 
-	endpoint = "https://newsapi.org/v2/everything?q={}".format(a_ticker)
+	endpoint = "https://newsapi.org/v2/everything?qInTitle={}".format(a_ticker)
 
 	params = { 'apiKey' : news_api,
 				'from' : convert_date,
-				'domains' : 'yahoo.com',
+				'domains' : 'yahoo.com,seekingalpha.com,bloomberg.com',
 				'language' : 'en'
 
 	}
@@ -241,9 +307,10 @@ def news_ticker(a_ticker, date):
 	#ideally i need to find the name of the company and search that in the headline
 
 	try:
-		news = news['articles'][0]['title']
+		news = news#['articles']#[0]['title']
 		return news
 	except:
 		return
+		
 
  

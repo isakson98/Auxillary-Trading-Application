@@ -19,7 +19,7 @@ import winsound
 import pandas as pd
 import ta
 
-Money_to_Risk = 10
+Money_to_Risk = 3
 
 
 class Risk_Reward:
@@ -343,7 +343,9 @@ class Risk_Reward:
 			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
 			self.data_pd['RsiClose14'] = indicator_rsi.rsi()
 		
-		print(self.data_pd['Timestamp'].iloc[a_iteration])
+		#i want to see what is going on live, how delayed is the data coming in 
+		if simulation == 0:
+			print(self.data_pd['Timestamp'].iloc[a_iteration] )
 
 		# initizaliing variables that will be compared to
 		# i do not want a_iteration variable changed, so i reassigned it

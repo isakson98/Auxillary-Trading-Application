@@ -214,7 +214,7 @@ def start_cold_entry():
 
 	while True:
 		time.sleep(1)
-		if round(time.time()) % 60 ==5:
+		if round(time.time()) % 60 == 6:
 			break
 
 	starttime=round(time.time())
@@ -232,14 +232,14 @@ def start_cold_entry():
 	final_r_r = fox.risk_reward_setup
 
 	#sending a 1:2 R/R
-	#TD.sending_oco(final_r_r) temp
+	#TD.sending_oco(final_r_r) 
 
 	return 0
 
 
 def repeat_trending_stocks():
 
-	print("Review current trending [1] or recent trending [2]")
+	print("Check trending tickers now [1], news on recently trending [2], news on particular stock [0]")
 	options = input()
 
 	#if option is one, use StockTwit api to get currently trading
@@ -256,6 +256,12 @@ def repeat_trending_stocks():
 	#if 2, open csv with previously trading stocks, check for today's news
 	elif options == '2':
 		sent.read_filtered_and_news()
+
+	#check news for a particular stock
+	elif options == '0':
+		print("Write ticker to check news for (UPPERCASE)")
+		ticker = input()
+		sent.check_todays_news(ticker)
 
 
 def model_init():

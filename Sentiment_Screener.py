@@ -140,7 +140,7 @@ class Sentiment_Screener:
 	# it moves data from a file into a dataframe, adds one row to the bottom, sorts df so that row gets to the top, and writes the completed df to the same file
 	# room for improvement:
 	# very inefficient because i am copying everything from one file, sort inefficiently, and write everything back to the file
-	# BE CAREFUL using this function on weekends
+	# BE CAREFUL using this function on weekends, check if saturday, sunday and not do the writing
 	def write_filtered(self):
 
 		try:
@@ -179,7 +179,7 @@ class Sentiment_Screener:
 				writer.writerow({'date': str(today_date), 'ticker_1': self.filtered_stocks[0], 'ticker_2': self.filtered_stocks[1], 'ticker_3' :self.filtered_stocks[2]})
 		return 
 
-	#retrieves tickers from csv and uses news api, to check if they have news
+	#retrieves tickers from csv and uses news api, to check if they have news TODAY
 	def read_filtered_and_news(self):
 		# retrieve all tickers from 3 existing columns, 
 		# check for news, get the stocks that have news, 
@@ -188,30 +188,35 @@ class Sentiment_Screener:
 
 		list_for_news = []
 
-		#getting the three tickers
+		#getting available tickers from a row
 		for ticker in recent_tickers.values:
-			try:
+			if ticker[1] != 'None':
 				list_for_news.append(ticker[1])
-			except:
-				pass
-			try:
+			if ticker[2] != 'None':
 				list_for_news.append(ticker[2])
-			except:
-				pass
-			try:
+			if ticker[3] != 'None':
 				list_for_news.append(ticker[3])
-			except:
-				pass
-
 
 		today_date = datetime.date(datetime.now())
 		for ticker in list_for_news:
-			article = FH_N.news_ticker(ticker, today_date)
+			#converting ticker symbol into company's official name
+			name = FH_N.yahoo_scraping(ticker)
+			article = FH_N.news_ticker(name, today_date)
 			if article != None:
 				print(ticker)
 				print(article)
 				print (" ")
 		return 
+
+	#checking today's news for a given stock
+	def check_todays_news(self, a_ticker):
+		today_date = datetime.date(datetime.now())
+		name = FH_N.yahoo_scraping(a_ticker)
+		article = FH_N.news_ticker(name, today_date)
+		print(article)
+
+		return 
+
 
 	# all the functions needed to get current trending tickers from StockTwit
 	def all_in_one(self):
