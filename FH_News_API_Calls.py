@@ -307,7 +307,7 @@ def news_ticker(a_ticker, date):
 	#ideally i need to find the name of the company and search that in the headline
 
 	try:
-		news = news#['articles']#[0]['title']
+		news = news['articles']#[0]['title']
 		return news
 	except:
 		return
