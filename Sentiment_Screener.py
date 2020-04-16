@@ -116,6 +116,12 @@ class Sentiment_Screener:
 				change = (data_d['now'] - data_d['prev']) / data_d['prev']
 				if change > 0.05:
 					local_filtered.append(stock)
+					#run only once during the process
+					if self.second_time_writing == False:
+						print(stock)
+						# run the first yahoo headline. if its trending, there is a higher probability of news
+						print(FH_N.yahoo_news_scraping(stock))
+						print()
 			except:
 				pass
 
@@ -124,8 +130,8 @@ class Sentiment_Screener:
 		print(local_filtered)
 
 		
-		# want this operation run only once a day, but here safety only set for one run of the program
-		# for the day is set in write funcion itself
+		# want this operation run only once a day, but here i protect myself running more than once within one executable run
+		# restrction for the day is set in write function itself
 		if self.second_time_writing == False:
 			#writing todays tickers into the file
 			self.write_filtered()
@@ -148,7 +154,7 @@ class Sentiment_Screener:
 			today_date = str(datetime.date(datetime.now()))
 
 			#.values returns dataframe's each row as numpy array 
-			#return if todays tickers are already in frame
+			#return if todays date is already recorded
 			for date in recent_tickers.values:
 				if date[0] == today_date:
 					print("Todays' tickers already recorded")
@@ -179,11 +185,11 @@ class Sentiment_Screener:
 				writer.writerow({'date': str(today_date), 'ticker_1': self.filtered_stocks[0], 'ticker_2': self.filtered_stocks[1], 'ticker_3' :self.filtered_stocks[2]})
 		return 
 
-	#retrieves tickers from csv and uses news api, to check if they have news TODAY
+	# retrieves tickers from csv, 
+	#^  checks the % change beteween today and yesterday 
+	# converts symbol into company name, and uses news api, to check if they have news TODAY
 	def read_filtered_and_news(self):
 		# retrieve all tickers from 3 existing columns, 
-		# check for news, get the stocks that have news, 
-		# show the news and ticker with it
 		recent_tickers = pd.read_csv("recent_runners.csv")
 
 		list_for_news = []
@@ -206,6 +212,7 @@ class Sentiment_Screener:
 				print(ticker)
 				print(article)
 				print (" ")
+				
 		return 
 
 	#checking today's news for a given stock

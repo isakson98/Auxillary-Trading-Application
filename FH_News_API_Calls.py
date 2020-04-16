@@ -6,7 +6,6 @@ import time
 import requests
 import json
 import csv
-import finviz
 
 
 ## THIS class requests unfiltered data from Finn Hubb and filters it according to the needs of TA module and the code already in place for calc
@@ -171,34 +170,47 @@ def five_min_data_simulation(open_order_info):
 # ^ not adjsuted for holidays
 # i need to access 3pm of last trading day to compare %change.
 # using hourly data as that is going to be the shortest intraday json
-def prev_day_data(open_order_info):
+# using default argument for real time checking, 2nd parameter to include timestamp from simulation
+def prev_day_data(open_order_info , now = datetime.now()):
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
-	#getting yesterday's date
-	yesterday = (datetime.now() - timedelta(1)).date()
+	#creating a copy to save the timestamp value
+	datetime_now = now
 
-	#converting yesterdays date to unix seconds and adding 15 hours, going to get the close value of the power hour 
+	# if it is a simulation, convert timestamp to datetime.datetime object
+	if isinstance(now, (datetime)) == False:
+		datetime_now = datetime.fromtimestamp(now)
+	#getting yesterday's date
+	yesterday = (datetime_now - timedelta(1)).date()
+
+	#converting yesterdays date to unix seconds and add 15 hours, going to get the close value of the power hour 
 	timestamp = time.mktime(time.strptime(str(yesterday), '%Y-%m-%d'))
 	timestamp += 54000
 
 	#mondays
 	if (date.today().isoweekday() == 1):
 		timestamp -= 172800 # subbing two days to account for saturday and sunday 
-		timestamp -= 86400 # for holidays # temp
+		#timestamp -= 86400 # for holidays # temp
 
 	#sunday
 	elif (date.today().isoweekday() == 7):
 		timestamp -= 86400 # subbing 1 day to account for saturday
 
-	#print(timestamp)
+	json_now = None
+	# it is a simulation if 'now' is a timestamp because that's what I am passing from Risk_Reward
+	if isinstance(now, (datetime)) == False:
+		json_now = float(now)
+	#otherwise it's realtime
+	else:
+		json_now = time.time()
+		
 
 	payload = { 'symbol' : open_order_info,
 			'resolution' : '60',
 			'token' : finn_hub,
-			'to' : time.time(), 
+			'to' : json_now, 
 			'from' : timestamp 
 	}
-
 	content = requests.get(url = endpoint, params = payload)
 	
 	day = content.json()
@@ -221,18 +233,6 @@ def prev_day_data(open_order_info):
 
 	return prev_day_now_close
 
-
-#find companys name (maybe through a TD api call) and then use the name to search in the headline
-def FH_news(a_ticker):
-	endpoint = 'https://finnhub.io/api/v1/news'
-
-	payload = { 'symbol' : a_ticker}
-
-	content = requests.get(url = endpoint, params = payload)
-
-	news = content.json()
-
-	return news
 
 
 #using an api from the website, which is just as slow as what I am doing myself
@@ -259,6 +259,7 @@ def yahoo_api(a_ticker):
 
 
 # web scraping personall y from the yahoo website
+# returns the full name of the company as a string
 def yahoo_scraping(a_ticker):
 
 	endpoint = "https://finance.yahoo.com/quote/{}?p={}&.tsrc=fin-srch".format(a_ticker, a_ticker)
@@ -281,33 +282,52 @@ def yahoo_scraping(a_ticker):
 	ticker_name = ticker_name.split("- ")
 
 	ticker_name = ticker_name[1].split(',')
-
 	return ticker_name[0]
+
+#returns the first news headline found on the yahoo page of the company
+#disadvantage: i do cannot extract date of the article, which loses the point of 
+def yahoo_news_scraping(a_ticker):
+
+	endpoint = "https://finance.yahoo.com/quote/{}?p={}&.tsrc=fin-srch".format(a_ticker, a_ticker)
+
+	#request object
+	page = requests.get(endpoint)
+
+	#access text portion of the object -> page.text
+	soup = BeautifulSoup(page.text, 'html.parser')
+
+	#grabbing tag and its content for the news headline
+	ticker_news = soup.find('h3', {"class" : "Mb(5px)"})
+	ticker_news = str(ticker_news).split("-->")
+	ticker_news = str(ticker_news[1]).split("<!--")
+
+	return ticker_news[0]
 
 
 #getting news from NewsAPI
 #using the name of the company in the title as query
+#sends todays headlines, but is inconsistent (does not have all the articles.)
 def news_ticker(a_ticker, date):
 
 	convert_date = date.isoformat()
 
 	endpoint = "https://newsapi.org/v2/everything?qInTitle={}".format(a_ticker)
+	#endpoint = "https://newsapi.org/v2/everything?q={}".format(a_ticker)
 
 	params = { 'apiKey' : news_api,
 				'from' : convert_date,
-				'domains' : 'yahoo.com,seekingalpha.com,bloomberg.com',
+				'domains' : 'yahoo.com',
 				'language' : 'en'
 
 	}
 
 	content = requests.get(url = endpoint, params = params)
-
 	news = content.json()
 
 	#ideally i need to find the name of the company and search that in the headline
 
 	try:
-		news = news['articles']#[0]['title']
+		news = news['articles'][0]['title']
 		return news
 	except:
 		return

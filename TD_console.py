@@ -208,10 +208,8 @@ def start_cold_entry():
 	#name_of_stock = name_of_stock.isupper()
 
 	
-	# basically, from the amount of time you want you it to sleep
-	# you subtract how much is left before the next time it should ran in that sequence
-	# start the loop only when the current seconds 
-
+	# want to starts reading data 6 seconds after new candle forms,
+	# as that is when my data provider creates previous candle's information 
 	while True:
 		time.sleep(1)
 		if round(time.time()) % 60 == 6:
