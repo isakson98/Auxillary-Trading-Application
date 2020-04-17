@@ -29,6 +29,8 @@ class Sentiment_Screener:
 		# ^ create a new instance of the chrome browser
 
 	#the first time launching the program
+	# 1) first part is selenium
+	# 2) second part is gettin the token
 	def authorize_stock_twit(self):
 
 		#create a new instance of the chrome browser
@@ -62,17 +64,13 @@ class Sentiment_Screener:
 
 		auth_code = urllib.parse.unquote(new_url.split('code=')[1])
 
-		self.auth_code = auth_code
-
 		#browser.quit()
-
-	# getting an access token which is required for the api call i am going to make later
-	def get_access_token(self):
-
+		
+		### getting the token 
 		endpoint = "https://api.stocktwits.com/api/2/oauth/token" 
 
 		payload = { 'client_id' : st_client_id,
-					'code' : self.auth_code,
+					'code' : auth_code,
 					'grant_type' : 'authorization_code',
 					'client_secret' : st_client_secret,
 					'redirect_uri' : "https://www.tdameritrade.com/home.page"}
@@ -118,6 +116,12 @@ class Sentiment_Screener:
 				change = (data_d['now'] - data_d['prev']) / data_d['prev']
 				if change > 0.05:
 					local_filtered.append(stock)
+					#run only once during the process
+					if self.second_time_writing == False:
+						print(stock)
+						# run the first yahoo headline. if its trending, there is a higher probability of news
+						print(FH_N.yahoo_news_scraping(stock))
+						print()
 			except:
 				pass
 
@@ -126,8 +130,8 @@ class Sentiment_Screener:
 		print(local_filtered)
 
 		
-		# want this operation run only once a day, but here safety only set for one run of the program
-		# for the day is set in write funcion itself
+		# want this operation run only once a day, but here i protect myself running more than once within one executable run
+		# restrction for the day is set in write function itself
 		if self.second_time_writing == False:
 			#writing todays tickers into the file
 			self.write_filtered()
@@ -142,7 +146,7 @@ class Sentiment_Screener:
 	# it moves data from a file into a dataframe, adds one row to the bottom, sorts df so that row gets to the top, and writes the completed df to the same file
 	# room for improvement:
 	# very inefficient because i am copying everything from one file, sort inefficiently, and write everything back to the file
-	# BE CAREFUL using this function on weekends
+	# BE CAREFUL using this function on weekends, check if saturday, sunday and not do the writing
 	def write_filtered(self):
 
 		try:
@@ -150,7 +154,7 @@ class Sentiment_Screener:
 			today_date = str(datetime.date(datetime.now()))
 
 			#.values returns dataframe's each row as numpy array 
-			#return if todays tickers are already in frame
+			#return if todays date is already recorded
 			for date in recent_tickers.values:
 				if date[0] == today_date:
 					print("Todays' tickers already recorded")
@@ -181,44 +185,49 @@ class Sentiment_Screener:
 				writer.writerow({'date': str(today_date), 'ticker_1': self.filtered_stocks[0], 'ticker_2': self.filtered_stocks[1], 'ticker_3' :self.filtered_stocks[2]})
 		return 
 
-	#retrieves tickers from csv and uses news api, to check if they have news
+	# retrieves tickers from csv, 
+	#^  checks the % change beteween today and yesterday 
+	# converts symbol into company name, and uses news api, to check if they have news TODAY
 	def read_filtered_and_news(self):
 		# retrieve all tickers from 3 existing columns, 
-		# check for news, get the stocks that have news, 
-		# show the news and ticker with it
 		recent_tickers = pd.read_csv("recent_runners.csv")
 
 		list_for_news = []
 
-		#getting the three tickers
+		#getting available tickers from a row
 		for ticker in recent_tickers.values:
-			try:
+			if ticker[1] != 'None':
 				list_for_news.append(ticker[1])
-			except:
-				pass
-			try:
+			if ticker[2] != 'None':
 				list_for_news.append(ticker[2])
-			except:
-				pass
-			try:
+			if ticker[3] != 'None':
 				list_for_news.append(ticker[3])
-			except:
-				pass
-
 
 		today_date = datetime.date(datetime.now())
 		for ticker in list_for_news:
-			article = FH_N.news_ticker(ticker, today_date)
+			#converting ticker symbol into company's official name
+			name = FH_N.yahoo_scraping(ticker)
+			article = FH_N.news_ticker(name, today_date)
 			if article != None:
 				print(ticker)
 				print(article)
 				print (" ")
+				
 		return 
+
+	#checking today's news for a given stock
+	def check_todays_news(self, a_ticker):
+		today_date = datetime.date(datetime.now())
+		name = FH_N.yahoo_scraping(a_ticker)
+		article = FH_N.news_ticker(name, today_date)
+		print(article)
+
+		return 
+
 
 	# all the functions needed to get current trending tickers from StockTwit
 	def all_in_one(self):
 
 		self.authorize_stock_twit()
-		self.get_access_token()
 		self.request_trending()
 		self.filter_trending()

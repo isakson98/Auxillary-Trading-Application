@@ -19,7 +19,7 @@ import winsound
 import pandas as pd
 import ta
 
-Money_to_Risk = 10
+Money_to_Risk = 3
 
 
 class Risk_Reward:
@@ -191,10 +191,6 @@ class Risk_Reward:
 	# instead add more different specifications to have more accurate results
 	def hot_exit(self, ticker, simulation, a_iteration):
 
-
-		#initializing in scope, so I can access later
-		data_pd_short = None
-
 		# keeping these separate becasuse I am creating local smaller dataframes for real time trading to increase performance
 		if simulation == 0:
 			self.data_pd = FH_N.one_min_data_csv(ticker)
@@ -208,16 +204,16 @@ class Risk_Reward:
 			self.data_pd['rsiHigh'] = indicator_rsi.rsi()
 
 			# create a smaller df of the last 25 to calculate BB and bb20 and sma, to avoid inefficiency
-			data_pd_short = self.data_pd.tail(25).copy()  
+			self.data_pd = self.data_pd.tail(25).copy()  
 			#library.file.class instance declaration
-			indicator_bb = ta.volatility.BollingerBands(close=data_pd_short["Close"], n=7, ndev=2)
-			data_pd_short['bb_bbh'] = round(indicator_bb.bollinger_hband(),2)
+			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=7, ndev=2)
+			self.data_pd['bb_bbh'] = round(indicator_bb.bollinger_hband(),2)
 
 			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=20, ndev=2)
-			data_pd_short['bb_bbh20'] = round(indicator_bb.bollinger_hband(),2)
+			self.data_pd['bb_bbh20'] = round(indicator_bb.bollinger_hband(),2)
 
 			##SMA indicator 
-			data_pd_short['SMA'] = data_pd_short['Close'].rolling(window=9).mean()
+			self.data_pd['SMA'] = self.data_pd['Close'].rolling(window=9).mean()
 
 
 		#not going to need to request data the first time because I'll have it from cold entry
@@ -239,18 +235,6 @@ class Risk_Reward:
 
 			self.data_pd['SMA'] = self.data_pd['Close'].rolling(window=9).mean()
 
-
-		#not active right now
-		# this will be used either by realtime or simulation
-		#data_pd_shorty = None
-		# # to avoid repetitive calculations in simulation, I will repopulate 
-		# if simulation == 0:
-		# 	data_pd_shorty = data_pd_short.copy()
-		# else:
-		# 	data_pd_shorty = self.data_pd[a_iteration - 2 : a_iteration + 1].copy()
-
-		##using dicts to avoid calling the last element of a big array using iloc (inefficient)
-		#for the last 3 I am using the last element in either of the shortened lists
 		
 		current = {'Close' : self.data_pd['Close'].iloc[a_iteration],
 					'High': self.data_pd['High'].iloc[a_iteration], 
@@ -259,8 +243,8 @@ class Risk_Reward:
 					'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration],
 					'Volume' : self.data_pd['Volume'].iloc[a_iteration],
 					'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration],
-					'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration],#data_pd_shorty['bb_bbh'].iloc[-1],
-					'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration], #data_pd_shorty['bb_bbh20'].iloc[-1],
+					'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration],
+					'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration], 
 					'SMA' : self.data_pd['SMA'].iloc[a_iteration]
 		}
 
@@ -271,8 +255,8 @@ class Risk_Reward:
 				'Timestamp': self.data_pd['Timestamp'].iloc[a_iteration-1],
 				'Volume' : self.data_pd['Volume'].iloc[a_iteration-1],
 				'rsiHigh' : self.data_pd['rsiHigh'].iloc[a_iteration-1],
-				'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration -1],#data_pd_shorty['bb_bbh'].iloc[-2],
-				'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration -1], #data_pd_shorty['bb_bbh20'].iloc[-2],
+				'bb_bbh' : self.data_pd['bb_bbh'].iloc[a_iteration -1],
+				'bb_bbh20' : self.data_pd['bb_bbh20'].iloc[a_iteration -1], 
 				'SMA' : self.data_pd['SMA'].iloc[a_iteration - 1]
 		}
 
@@ -324,25 +308,29 @@ class Risk_Reward:
 	# and I want the previous red candle to be smaller than the highest candle of the previous green field (in absolute terms)
 	# At the same time, I want rsi to be lower than 67.5, so I am not buying something overextended, despite macd signal
 
-	def cold_entry(self, ticker, simulation, a_iteration):
+	def cold_entry(self, a_ticker, simulation, a_iteration):
 
-		self.open_order_info['ticker'] = ticker
+		self.open_order_info['ticker'] = a_ticker
 		
 		#if I am doing real time trading, I need to request data every time I use this function 
 		if simulation == 0:
-			self.data_pd = FH_N.one_min_data_csv(self.open_order_info)
+			self.data_pd = FH_N.one_min_data_csv(a_ticker)
 
 		#only need to collect this data once for simulation. It will be saved from then on
 		#Either live or simulation -> both need to access these indicator calculations at least once
 		if simulation == 0 or (simulation == 1 and 'Macd' not in self.data_pd.columns):
-			#macd
+			#MACD indicator
 			indicator_macd = ta.trend.MACD(close=self.data_pd["Close"], n_slow = 26, n_fast = 12, n_sign = 9)
+			#round to 4 decimal places as I will be trading cheap stocks quite frequently
 			self.data_pd['Macd'] = round(indicator_macd.macd_diff(),4)
 
 			##RSI indicator
 			indicator_rsi = ta.momentum.RSIIndicator(close=self.data_pd["Close"], n=14)
 			self.data_pd['RsiClose14'] = indicator_rsi.rsi()
-			
+		
+		#i want to see what is going on live, how delayed the data is coming in 
+		if simulation == 0:
+			print(self.data_pd['Timestamp'].iloc[a_iteration] )
 
 		# initizaliing variables that will be compared to
 		# i do not want a_iteration variable changed, so i reassigned it
@@ -392,6 +380,18 @@ class Risk_Reward:
 		#keeping track of cold entries (for simulation purposes)
 		if simulation == 1:
 			self.data_pd.loc[a_iteration, 'Cold Entry'] = 1
+
+		# i only want to trade if SPY is > -2%
+		# why did i place this here? for the most part, having significant red SPY days is not common
+		# and since I have about 2-5 entries a day in a ticker, all the other times would be wasted
+		# if this was placed higher. I want to check after I KNOW this candles is an entry for sure,
+		# BUT i haven't done the calculations for R/R (some efficiency), so I return False
+		data_d = FH_N.prev_day_data("SPY", self.data_pd['Timestamp'].iloc[a_iteration])
+		change = (data_d['now'] - data_d['prev']) / data_d['prev']
+		if change < -0.02:
+			time_now = self.sec_into_time_convert(a_iteration)
+			print(a_ticker, ": No trade at: ", time_now, "| Reason: SPY is below yesterday's close too much")
+			return False
 		
 		#start the risk/reward calculation
 		#prompting user to select the stop loss
@@ -412,7 +412,7 @@ class Risk_Reward:
 		elif answer == '2':
 			self.cold_entry_risk_reward_atr(a_iteration, simulation)
 		elif answer == '3':
-			self.cold_entry_risk_reward_5_emas(a_iteration, simulation, ticker)
+			self.cold_entry_risk_reward_5_emas(a_iteration, simulation, a_ticker)
 			
 		return True
 
@@ -444,7 +444,7 @@ class Risk_Reward:
 								'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now ) 
+		print("R/R : ", self.risk_reward_setup, time_now ) 
 
 		return True
 	
@@ -503,7 +503,7 @@ class Risk_Reward:
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(a_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, time_now ) 
+		print("R/R : ", self.risk_reward_setup, time_now ) 
 
 		return True
 
@@ -512,6 +512,7 @@ class Risk_Reward:
 	# this risk will be based on 5 min 8 ema or 20 ema
 	# if 1 min close > 8 ema and abs(1 min high - 1min low) >= abs(1min low -1min close) = risk current 8 ema
 	# if 1min close > 8 ema and abs(1min high - 1min low) < abs(1min low - 1min close) = risk 20 ema
+	# if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
 	# if 1min close < 8 ema = risk current 20 ema
 	def cold_entry_risk_reward_5_emas(self, a_iteration, simulation, ticker):
 
@@ -554,20 +555,36 @@ class Risk_Reward:
 		# if close > 8 ema and abs(high - low) >= abs(low - close) = risk current 8 ema
 		extended = abs(self.five_min_data['ema_8'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) >= abs(self.five_min_data['High'].iloc[a_iteration] - self.five_min_data['Low'].iloc[a_iteration]) 
 		final_extended = extended and self.five_min_data['Low'].iloc[a_iteration] > self.five_min_data['ema_8'].iloc[a_iteration]
-
 		
-		#using current 1 min high for calculations
-		current_1_min = self.data_pd['High'].iloc[one_min_iteration]
+		#using current 1 min close for calculations cause im entering right after this candle finishes
+		current_1_min = self.data_pd['Close'].iloc[one_min_iteration]
 		risk = 0
 		reward = 0
 
-#^ add if current 5 min low is below 20 min
-#^ consider the condition to be macd >= previous red one (equal as well)
+		#if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
+		iterations_back = a_iteration
+		above_8ema = 0
+		while iterations_back != a_iteration - 4:
+			if self.five_min_data['Low'].iloc[iterations_back] > self.five_min_data['ema_8'].iloc[iterations_back]:
+				above_8ema += 1
+			iterations_back -= 1
+
 
 		# in case 5 min is overextended
 		if final_extended:
 			risk = self.five_min_data['ema_8'].iloc[a_iteration] - 0.04
 			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
+		#if none of 4 of the last 5 min candles touch the 8ema, risk = current 8 ema
+		elif above_8ema == 4:
+			risk = self.five_min_data['ema_8'].iloc[a_iteration] - 0.04
+			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
+		#if current 5min low is below 20 ema, risk is low of 5 min
+		elif self.five_min_data['ema_20'].iloc[a_iteration] > self.five_min_data['Low'].iloc[a_iteration]:
+			risk = self.five_min_data['Low'].iloc[a_iteration] - 0.04
+			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+
 		#in case 5 min is not overextended
 		else:
 			risk = self.five_min_data['ema_20'].iloc[a_iteration] - 0.04
@@ -581,7 +598,7 @@ class Risk_Reward:
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(one_min_iteration)
-		print("R/R based on entry: ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
+		print("R/R : ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
 
 
 
