@@ -394,38 +394,64 @@ def TD_price_history(symbol, date, frequency):
 
     data_pd = pd.read_json(data)
 
-    ## td's data comes a candle as one row, where I need one column for all closes, opens, etc
-    open_list = []
-    close_list = []
-    high_list = []
-    low_list = []
-    timestamp_list = []
+    if symbol != "SPY":
+        ## td's data comes a candle as one row, where I need one column for all closes, opens, etc
+        open_list = []
+        close_list = []
+        high_list = []
+        low_list = []
+        volume_list = []
+        timestamp_list = []
 
-    #adding miliseconds to 1pm
-    one_oclock = date + 12600000
+        #adding miliseconds to 1pm
+        one_oclock = date + 12600000
 
-    for candle in data_pd['candles']:
-        open_list.append(candle['open'])
-        close_list.append(candle['close'])
-        high_list.append(candle['high'])
-        low_list.append(candle['low'])
-        timestamp_list.append(candle['datetime'] / 1000)
+        for candle in data_pd['candles']:
+            open_list.append(candle['open'])
+            close_list.append(candle['close'])
+            high_list.append(candle['high'])
+            low_list.append(candle['low'])
+            volume_list.append(candle['volume'])
+            timestamp_list.append(candle['datetime'] / 1000)
+            
+            #if the time is one_oclock i'm done
+            if candle['datetime'] == one_oclock:
+                #print("broke at ", timestamp_list[-1])
+                break
+
+        columnZ = ['Close','High', 'Low', 'Open', 'Timestamp']
+        data_pd = pd.DataFrame(columns = columnZ)
         
-        #if the time is one_oclock i'm done
-        if candle['datetime'] == one_oclock:
-            #print("broke at ", timestamp_list[-1])
-            break
-
-    columnZ = ['Close','High', 'Low', 'Open', 'Timestamp']
-    data_pd = pd.DataFrame(columns = columnZ)
+        data_pd['Close'] = close_list
+        data_pd['High'] = high_list
+        data_pd['Open'] = open_list
+        data_pd['Low'] = low_list
+        data_pd['Timestamp'] = timestamp_list
+        data_pd['Volume'] = volume_list
+        data_pd['Cold Entry'] = data_pd.apply(lambda row: 0, axis=1)
+        data_pd['Hot Exit'] = data_pd.apply(lambda row: 0, axis=1)
     
-    data_pd['Close'] = close_list
-    data_pd['High'] = high_list
-    data_pd['Open'] = open_list
-    data_pd['Low'] = low_list
-    data_pd['Timestamp'] = timestamp_list
-    data_pd['Cold Entry'] = data_pd.apply(lambda row: 0, axis=1)
-    data_pd['Hot Exit'] = data_pd.apply(lambda row: 0, axis=1)
-   # print("last minute of data ", data_pd['Timestamp'].iloc[-1])
+    # for spy i only need close and timestamps
+    else:
+        ## td's data comes a candle as one row, where I need one column for all closes, opens, etc
+        close_list = []
+        timestamp_list = []
+
+        #adding miliseconds to 1pm
+        one_oclock = date + 12600000
+
+        for candle in data_pd['candles']:
+            close_list.append(candle['close'])
+            timestamp_list.append(candle['datetime'] / 1000)
+            
+            #if the time is one_oclock i'm done
+            if candle['datetime'] == one_oclock:
+                break
+
+        columnZ = ['Close', 'Timestamp']
+        data_pd = pd.DataFrame(columns = columnZ)
+        
+        data_pd['Close'] = close_list
+        data_pd['Timestamp'] = timestamp_list
 
     return data_pd
