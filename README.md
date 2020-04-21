@@ -9,7 +9,8 @@ This program allows me autonomously to:
 4) a) scan through trending stocks based StockTwits Trending feed and filer them to show in-play long potentials
    b) check for today's news of 60 in play stocks of the last 20 sessions
 5) run simulation on the last trending stocks, showing entries and exits
-    
+
+![alt text](Auxillary Trading Application Design.png "Design of the project")
 
 This program also now supports simulations for different technical analysis functions defined in Risk_Reward.py file (manual date and ticker name)
 
