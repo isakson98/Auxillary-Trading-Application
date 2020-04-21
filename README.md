@@ -10,7 +10,8 @@ This program allows me autonomously to:
    b) check for today's news of 60 in play stocks of the last 20 sessions
 5) run simulation on the last trending stocks, showing entries and exits
 
-![alt text](Auxillary Trading Application Design.png "Design of the project")
+![image](https://user-images.githubusercontent.com/43397175/79826642-4247df80-836a-11ea-83f7-a95572522bd9.png)
+
 
 This program also now supports simulations for different technical analysis functions defined in Risk_Reward.py file (manual date and ticker name)
 
