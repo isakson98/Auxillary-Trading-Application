@@ -13,12 +13,9 @@ This program allows me autonomously to:
 ![image](https://user-images.githubusercontent.com/43397175/79826642-4247df80-836a-11ea-83f7-a95572522bd9.png)
 
 
-This program also now supports simulations for different technical analysis functions defined in Risk_Reward.py file (manual date and ticker name)
-
-!!! Run TD_Console.py for a menu !!!
 
 Some of the pivotal libraries in this project: Selenium (+Splinter), TA, Pandas, Requests, Time 
 
 Currently used APIs : TD Ameritrade, Finn Hub, StockTwits, ApiNews
 
-You need your own accounts and register your own applications to input passwords (I stored mine in Config.py)
+You need your own accounts and register your own applications to for passwords and tokens.
