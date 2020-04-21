@@ -11,7 +11,7 @@ import csv
 ## THIS class requests unfiltered data from Finn Hubb and filters it according to the needs of TA module and the code already in place for calc
 
 
-#for momentum
+#for momentum real time
 def one_min_data(stock_ticker): 
 
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
@@ -20,8 +20,6 @@ def one_min_data(stock_ticker):
 				'resolution' : 1,
 				'token' : finn_hub,
 				'count' : 10
-				#'from' : 1585318341, #10:00:14 AM 1585202114 temp
-				#'to' : 1585325541    # 11:50:14 PM
 	}
 
 	content = requests.get(url = endpoint, params = payload)
@@ -30,12 +28,12 @@ def one_min_data(stock_ticker):
 
 	return one_min_data
 
-#for calculating technical indicators
+#for calculating technical indicators real time
 def one_min_data_csv(ticker): 
 
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
-	payload = { 'symbol' : 'WORX', #ticker,
+	payload = { 'symbol' : ticker,
 				'resolution' : 1,
 				'count' : 90, #7 temp
 				'token' : finn_hub,
@@ -89,7 +87,7 @@ def one_min_data_simulation(open_order_info):
 
 	return data_pd
 
-#for 5 min trend
+#for 5 min trend real time
 def five_min_data(ticker):
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
 
@@ -107,7 +105,7 @@ def five_min_data(ticker):
 
 	return five_min_data
 
-#for calculating technical indicators
+#for calculating technical indicators real time
 def five_min_data_csv(ticker): 
 
 	endpoint = 'https://finnhub.io/api/v1/stock/candle'
@@ -188,13 +186,16 @@ def prev_day_data(open_order_info , now = datetime.now()):
 	timestamp += 54000
 
 	#mondays
-	if (date.today().isoweekday() == 1):
+	if (datetime_now.isoweekday() == 1):
 		timestamp -= 172800 # subbing two days to account for saturday and sunday 
-		#timestamp -= 86400 # for holidays # temp
+		# a holiday on monday, so get data from thursday
+		if datetime_now ==  datetime(2020, 4, 13, 9, 30, 0):
+			timestamp -= 86400 # for holidays # temp
 
 	#sunday
-	elif (date.today().isoweekday() == 7):
+	elif (datetime_now.isoweekday() == 7):
 		timestamp -= 86400 # subbing 1 day to account for saturday
+		print("It's Sunday!")
 
 	json_now = None
 	# it is a simulation if 'now' is a timestamp because that's what I am passing from Risk_Reward
