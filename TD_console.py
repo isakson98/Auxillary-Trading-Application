@@ -43,8 +43,13 @@ def one_r_two_r_exit_placement():
 		elif (resp == '0'):
 			print("No action")
 
-		TD.sending_oco(final_r_r)
+		#confirmation in case something silly
+		print("Confirm? Y/N ")
+		confirmation = input()
 
+		if (confirmation =='Y' or confirmation =='y'):
+			TD.sending_oco(final_r_r) 
+ 
 
 	except KeyboardInterrupt:
 		print("Stop checking for opening positions")
@@ -226,11 +231,12 @@ def start_cold_entry():
 		print(current_time)
 
 		time.sleep(60.0 - ((time.time() - starttime) % 60.0))
+	
+	
 	#part of sending the order
-	final_r_r = fox.risk_reward_setup
-
+	#final_r_r = fox.risk_reward_setup
 	#sending a 1:2 R/R
-	#TD.sending_oco(final_r_r) 
+	#TD.sending_oco(final_r_r) not ready yet to be implemented
 
 	return 0
 
