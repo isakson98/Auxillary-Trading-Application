@@ -84,7 +84,7 @@ class Risk_Reward:
 					winsound.Beep(1000, 980)
 					self.open_order_info = received_order_info
 					print("Found new opened order: {}".format(received_order_info))
-					self.push_new_orders_in_file(received_order_info)
+					#self.push_new_orders_in_file(received_order_info) temp
 					return received_order_info['ticker']
 
 		print("No new orders")
@@ -125,9 +125,9 @@ class Risk_Reward:
 
 		#compare the two 
 		five_min_stop_loss = current_five_min - 0.03 if current_five_min < prev_five_min else prev_five_min -0.03
-		target = round((self.open_order_info['price'] + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
+		target = round((self.open_order_info['price'] - 0.03 + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
 
-		self.risk_reward_setup = {'risk' : five_min_stop_loss, 
+		self.risk_reward_setup = {'risk' : round(five_min_stop_loss, 2),
 									'reward' : target, 
 									'shares' : int(self.open_order_info['shares']), 
 									'ticker' : self.open_order_info['ticker']}
