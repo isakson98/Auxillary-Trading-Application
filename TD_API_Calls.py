@@ -3,6 +3,9 @@ from TdAmeritradeAuth import TDAuthentication
 from datetime import datetime
 import pandas as pd
 import requests
+import json
+import urllib
+import dateutil
 
 #THIS class requests unfiltered TD API calls 
 
@@ -368,6 +371,100 @@ class TD_API_Calls:
         print(content.status_code)
         return
 
+
+####### FOR DATA STREAMING
+    def unix_time_millis(self, dt):
+        epoch = datetime.utcfromtimestamp(0)
+        return(dt - epoch).total_seconds() * 1000.0
+
+    ##getting the info to access the websocket for data
+    def get_cred(self):
+
+        #defining the end point = user principles
+        endpoint = 'https://api.tdameritrade.com/v1/userprincipals'
+
+        # get our access token
+        header = {'Authorization' : 'Bearer {}'.format(self.access_token)}
+
+        #defining the parameters for the endpoint
+        payload = {'fields' : 'streamerSubscriptionKeys,streamerConnectionInfo'}
+
+
+        try:
+            content = requests.get(url = endpoint, headers = header)
+            content.raise_for_status()
+        except requests.HTTPError : #as e before this
+            print("Token timed out -> obtaining a new one")
+            self.TDClient.authenticate()
+            self.access_token = self.TDClient.access_token
+            header = {'Authorization' : "Bearer {}".format(self.access_token)}
+            content = requests.get(url = endpoint, params = payload, headers = header) # temp
+
+        #we are converting to a dictionary, to it will be easier for us parse the string
+        userPrincipalsResponse = content.json()
+
+        #grab the time sstamp and convert to milliseconds
+        tokenTimeStamp = userPrincipalsResponse['streamerInfo']['tokenTimestamp']
+        #parsing the date ignore the time zone
+        date = dateutil.parser.parse(tokenTimeStamp, ignoretz=True)
+        #converting into milliseconds
+        tokenTimeStampAsMs = self.unix_time_millis(date)
+
+        #define the items to make a request to login
+       # we need to define our credentials that we will need to make our stream
+        credentials = {"userid": userPrincipalsResponse['accounts'][0]['accountId'],
+                    "token": userPrincipalsResponse['streamerInfo']['token'],
+                    "company": userPrincipalsResponse['accounts'][0]['company'],
+                    "segment": userPrincipalsResponse['accounts'][0]['segment'],
+                    "cddomain": userPrincipalsResponse['accounts'][0]['accountCdDomainId'],
+                    "usergroup": userPrincipalsResponse['streamerInfo']['userGroup'],
+                    "accesslevel":userPrincipalsResponse['streamerInfo']['accessLevel'],
+                    "authorized": "Y",
+                    "timestamp": int(tokenTimeStampAsMs),
+                    "appid": userPrincipalsResponse['streamerInfo']['appId'],
+                    "acl": userPrincipalsResponse['streamerInfo']['acl'] }
+
+        #print(credentials)
+
+        #defining a login request
+        ##we have to login it first (send the login request), and then define data request
+
+        login_request = {"requests": [{"service": "ADMIN",
+                              "requestid": "0",  
+                              "command": "LOGIN",
+                              "account": userPrincipalsResponse['accounts'][0]['accountId'],
+                              "source": userPrincipalsResponse['streamerInfo']['appId'],
+                              "parameters": {"credential": urllib.parse.urlencode(credentials),
+                                             "token": userPrincipalsResponse['streamerInfo']['token'],
+                                             "version": "1.0"}}]}
+        #defining a request to stream
+        data_request= {"requests":[{"service": "TIMESALE_EQUITY",
+                                    "requestid": "2",
+                                    "command": "SUBS",
+                                    "account": userPrincipalsResponse['accounts'][0]['accountId'],
+                                    "source": userPrincipalsResponse['streamerInfo']['appId'],
+                                    "parameters": {
+                                        "keys": "AAPL",
+                                        "fields": "0,1,2,3"
+                                    }}]}
+
+
+
+        #turn the request into a json string
+        login_encoded = json.dumps(login_request)
+        data_encoded = json.dumps(data_request)
+
+        socket_url = userPrincipalsResponse['streamerInfo']['streamerSocketUrl']
+        socket_uri = "wss://" + socket_url + "/ws"
+
+        login_and_data = [login_encoded, data_encoded, socket_uri]
+
+       
+        print(login_and_data)
+
+        return login_and_data
+
+#not part of class because i do not need to get authentication
 ### get data for a stock, for a simulation
 ### the delay in this case becomes irrelevant because i'm talking about the past
 # formatting below to fit the current code and structure for the TA library in Risk_Reward.py
@@ -455,3 +552,4 @@ def TD_price_history(symbol, date, frequency):
         data_pd['Timestamp'] = timestamp_list
 
     return data_pd
+

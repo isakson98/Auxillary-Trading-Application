@@ -26,7 +26,7 @@ class TDAuthentication:
 		#define the path of where the chrome driver is located
 		options = Options()
 		options.add_argument("window-size=800,500")
-		executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
+		executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver\chromedriver'}
 
 		#create a new instance of the chrome browser
 		browser = Browser('chrome', **executable_path, headless = True)
