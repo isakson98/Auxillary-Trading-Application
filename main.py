@@ -1,6 +1,7 @@
 from Risk_Reward import Risk_Reward 
 from TD_API_Calls import TD_API_Calls #solved = TD_API only called from this file to reduce the need for selenium to run twice
 from Sentiment_Screener import Sentiment_Screener
+from Simulation_Model import simulation_model
 from datetime import datetime
 from dateutil import parser
 import time
@@ -270,18 +271,32 @@ def repeat_trending_stocks():
 
 def model_init():
 
-	print("Enter ticker symbol: ")
-	name = input()
+	print("Simulate one custom [1] or a batch from recent_runners.csv [2]")
+	custom_vs_batch = input()
 
-	print("Enter date (yyyy-mm-dd') or [now] for today to analyze: ")
-	date = input()
+	#using run_thorugh model just once 
+	if custom_vs_batch == '1':
 
-	#now means i need to get todays date and format it 
-	if date == "now":
-		today_date = datetime.date(datetime.now())
-		date = today_date.isoformat()
+		print("Enter ticker symbol: ")
+		name = input()
 
-	fox.run_through_model(name, date)
+		print("Enter date (yyyy-mm-dd') or [now] for today to analyze: ")
+		date = input()
+
+		#now means i need to get todays date and format it 
+		if date == "now":
+			today_date = datetime.date(datetime.now())
+			date = today_date.isoformat()
+
+		fox.run_through_model(name, date)
+
+	#going throught the simulation from simulation_model file
+	elif custom_vs_batch == '2':
+
+		print("How many days? [-1] for all in csv")
+		rows = input()
+		simulation_model(int(rows))
+
 
 
 
