@@ -22,12 +22,6 @@ class TD_API_Calls:
         today_date = datetime.date(datetime.now())
         endpoint = r"https://api.tdameritrade.com/v1/orders?fromEnteredTime={}".format(today_date) #uncomment
 
-        # endpoint = r"https://api.tdameritrade.com/v1/orders" #temp
-        # payload = { 'toEnteredTime' : '2020-04-07', #temp
-        #             'fromEnteredTime' : '2020-03-01',#temp
-        #             'maxResults' : '100',#temp
-        # }
-
         #checking if the token is still valid
         try:
             content = requests.get(url = endpoint, headers = header)
@@ -100,14 +94,14 @@ class TD_API_Calls:
 
         #checking if the token is still valid
         try:
-            content = requests.post(url = endpoint, params = payload, headers = header)
+            content = requests.post(url = endpoint, json = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
             header = {'Authorization' : "Bearer {}".format(self.access_token)}
-            content = requests.post(url = endpoint, params = payload,  headers = header)
+            content = requests.post(url = endpoint, json = payload,  headers = header)
             print(content.raise_for_status())
 
         if (content.status_code == 200):
@@ -142,19 +136,19 @@ class TD_API_Calls:
                 }
                 }
             ]
-            }
+        }
 
 
         #checking if the token is still valid
         try:
-            content = requests.post(url = endpoint, params = payload, headers = header)
+            content = requests.post(url = endpoint, json = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
             header = {'Authorization' : "Bearer {}".format(self.access_token)}
-            content = requests.post(url = endpoint, params = payload,  headers = header)
+            content = requests.post(url = endpoint, json = payload,  headers = header)
             print(content.raise_for_status())
 
         if (content.status_code == 200):
@@ -194,14 +188,14 @@ class TD_API_Calls:
 
         #checking if the token is still valid
         try:
-            content = requests.post(url = endpoint, params = payload, headers = header)
+            content = requests.post(url = endpoint, json = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError :
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
             header = {'Authorization' : "Bearer {}".format(self.access_token)}
-            content = requests.post(url = endpoint, params = payload,  headers = header)
+            content = requests.post(url = endpoint, json = payload,  headers = header)
             print(content.raise_for_status())
 
         if (content.status_code == 200):
@@ -237,14 +231,14 @@ class TD_API_Calls:
 
         #checking if the token is still valid
         try:
-            content = requests.post(url = endpoint, params = payload, headers = header)
+            content = requests.post(url = endpoint, json = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError:
             print("Token timed out -> obtaining a new one")
             self.TDClient.authenticate()
             self.access_token = self.TDClient.access_token
             header = {'Authorization' : "Bearer {}".format(self.access_token)}
-            content = requests.post(url = endpoint, params = payload,  headers = header)
+            content = requests.post(url = endpoint, json = payload,  headers = header)
             print(content.raise_for_status())
 
         if (content.status_code == 200):
@@ -378,7 +372,7 @@ class TD_API_Calls:
         return(dt - epoch).total_seconds() * 1000.0
 
     ##getting the info to access the websocket for data
-    def get_cred(self):
+    def get_cred(self, a_ticker):
 
         #defining the end point = user principles
         endpoint = 'https://api.tdameritrade.com/v1/userprincipals'
@@ -444,7 +438,7 @@ class TD_API_Calls:
                                     "account": userPrincipalsResponse['accounts'][0]['accountId'],
                                     "source": userPrincipalsResponse['streamerInfo']['appId'],
                                     "parameters": {
-                                        "keys": "AAPL",
+                                        "keys": a_ticker,
                                         "fields": "0,1,2,3"
                                     }}]}
 

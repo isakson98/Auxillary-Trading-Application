@@ -5,15 +5,22 @@ import asyncio
 import nest_asyncio
 import datetime
 
-
+# figure out how to split into minutes
+# how to figure out which tick was last to compare it with current
+# how do i want to deal with data and how/where to implement indicators based on incoming data
 
 class WebSocket_TD:
 
     def __init__(self):
         #getting login, data info, and url from main TD class
-        TD_client = TD_API_Calls()
-        self.log_data_url = TD_client.get_cred()
+        self.log_data_url = None
         self.connection: websockets.WebSocketClientProtocol = None
+
+        #data variables
+        self.total_volume = None
+        self.up_volume = None
+        self.down_volume = None
+        self.previous_vol = None
 
         #either get an event loop (which stores coroutines to switch beteween) or create a new one
         try:
@@ -22,11 +29,15 @@ class WebSocket_TD:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
-    def stream(self):
+    def stream(self, a_ticker):
         """Starts the stream and prints the output to the console.
         Initalizes the stream by building a login request, starting 
         an event loop, creating a connection, passing through the 
         requests, and keeping the loop running."""
+        TD_client = TD_API_Calls()
+        self.log_data_url = TD_client.get_cred(a_ticker)
+
+
         try:
             # Connect to the Websocket.
             self.loop.run_until_complete(self._connect(pipeline_start=False))
@@ -39,8 +50,15 @@ class WebSocket_TD:
 
             # Keep the Loop going, until an exception is reached.
             self.loop.run_forever()
+
+        # interrupting the stream
         except:
-            self.close_stream()
+            # adding function in the loop that will close all other tasks
+            asyncio.ensure_future(self.close_stream())
+            self.loop.run_forever()
+
+            self.loop.close()
+            print(self.loop.is_closed())
 
 
     async def _connect(self, pipeline_start: bool = True) -> websockets.WebSocketClientProtocol:
@@ -76,9 +94,7 @@ class WebSocket_TD:
             # Login to the stream.
             await self._send_message(login_request)
             return self.connection
-    
-    def shut_down(self):
-        self.close_stream()
+
 
     async def close_stream(self) -> None:
         """Closes the connection to the streaming service."""        
@@ -102,6 +118,9 @@ class WebSocket_TD:
                 await task
             except asyncio.CancelledError:
                 print("main(): cancel_me is cancelled now")
+
+        # stopping the loop after this function
+        self.loop.stop()
     
     async def _send_message(self, message: str):
         """Sends a message to webSocket server
@@ -137,8 +156,8 @@ class WebSocket_TD:
                 if "data" in message_decoded:
                     # format -> {'seq': 310, 'key': 'AAPL', '1': 1587759182311, '2': 282.96, '3': 76.0, '4': 124604}
                     for single in message_decoded["data"][0]['content']:
-                        if single['3'] > 100:
-                            print(single)
+                        if single['3'] > 1000:
+                            print(single['3'])
 
             except websockets.exceptions.ConnectionClosed:
 
@@ -201,8 +220,4 @@ class WebSocket_TD:
                 print('Connection with server closed')
                 break
 
-
-timesale_socket = WebSocket_TD()
-
-timesale_socket.stream()
 
