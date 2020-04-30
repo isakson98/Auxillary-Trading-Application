@@ -47,8 +47,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)   
-
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)   
 
         payload = {
         #reward
@@ -118,7 +117,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)  
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)  
 
         payload = {
             "orderType": "STOP",
@@ -451,10 +450,7 @@ class TD_API_Calls:
         socket_url = userPrincipalsResponse['streamerInfo']['streamerSocketUrl']
         socket_uri = "wss://" + socket_url + "/ws"
 
-        login_and_data = [login_encoded, data_encoded, socket_uri]
-
-       
-        print(login_and_data)
+        login_and_data = {'login' : login_encoded, 'data' : data_encoded, 'uri': socket_uri}
 
         return login_and_data
 

@@ -199,8 +199,8 @@ class Risk_Reward:
 		if simulation == 0:
 			self.data_pd = FH_N.one_min_data_csv(ticker)
 
-			# if the price has not reached 2X Reward, oversold != need to exit
-			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+			# if the price has not reached 1.8X Reward (for some leevay), oversold != need to exit
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward'] * 1.8:
 				return False
 
 			##RSI indicator -> very lagging, performs closer to reality 100 away from head
@@ -223,7 +223,7 @@ class Risk_Reward:
 		elif simulation == 1 and 'bb_bbh' not in self.data_pd.columns:
 
 			# if the price has not reached 2X Reward, oversold != need to exit
-			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward'] * 1.8:
 				return False
 
 			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=7, ndev=2)

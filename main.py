@@ -168,7 +168,7 @@ def start_hot_exit(token):
 			time.sleep(1)
 			# start indicator 3 seconds before current minute ends
 			result = False
-			if round(time.time()) % 60 ==56:
+			if round(time.time()) % 60 == 6:
 				result = fox.hot_exit(stock_ticker, 0, -1)
 			if result == True:
 				TD.deleting_one_saved_order(order_info['Order_Id']) #temp
@@ -311,6 +311,7 @@ while True:
 	print("[5] - See trending stocks") 
 	print("[6] - Run simulation model")
 	print("[10] - Find risk order ID")
+	print("[20] oco")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
 
@@ -331,6 +332,9 @@ while True:
 		model_init()
 	elif decision == '10':
 		find_risk_exit_order_id()
+	elif decision == '20':
+		order_dict = {'ticker' : 'CREX', 'shares' : 1, 'reward' : 10.00, 'risk': 0.5}
+		TD.sending_oco(order_dict)
 	elif decision == 'q':
 		quit(0)
 

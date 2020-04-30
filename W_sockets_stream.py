@@ -11,16 +11,11 @@ import datetime
 
 class WebSocket_TD:
 
-    def __init__(self):
+    def __init__(self, a_ticker):
         #getting login, data info, and url from main TD class
-        self.log_data_url = None
+        TD_client = TD_API_Calls()
+        self.log_data_url = TD_client.get_cred(a_ticker)
         self.connection: websockets.WebSocketClientProtocol = None
-
-        #data variables
-        self.total_volume = None
-        self.up_volume = None
-        self.down_volume = None
-        self.previous_vol = None
 
         #either get an event loop (which stores coroutines to switch beteween) or create a new one
         try:
@@ -29,13 +24,43 @@ class WebSocket_TD:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
-    def stream(self, a_ticker):
+
+    #pipeline functions
+    async def start_pipeline(self) -> dict:     
+        """Recieves the data as it streams in.
+        Returns:
+        ----
+        dict -- The data coming from the websocket.
+        """
+
+        return await self._receive_message(return_value=True)
+
+
+    #pipeline functions
+    async def build_pipeline(self) -> websockets.WebSocketClientProtocol:
+        """Builds a data pipeine for processing data.
+        Often we want to take the data we are streaming and
+        use it in other functions or store it in other platforms.
+        This method makes the process of building a pipeline easy
+        by handling all the connection setup and request setup.
+        Returns:
+        ----
+        websockets.WebSocketClientProtocol -- The websocket connection.
+        """
+
+        # Connect to Websocket.
+        await self._connect()
+
+        # Build the Data Request.
+        await self._send_message(self.log_data_url['data'])
+
+        return self.connection
+
+    def stream(self):
         """Starts the stream and prints the output to the console.
         Initalizes the stream by building a login request, starting 
         an event loop, creating a connection, passing through the 
         requests, and keeping the loop running."""
-        TD_client = TD_API_Calls()
-        self.log_data_url = TD_client.get_cred(a_ticker)
 
 
         try:
@@ -43,7 +68,7 @@ class WebSocket_TD:
             self.loop.run_until_complete(self._connect(pipeline_start=False))
 
             # Send the Request.
-            asyncio.ensure_future(self._send_message(self.log_data_url[1]))
+            asyncio.ensure_future(self._send_message(self.log_data_url['data']))
 
             # Start Recieving Messages.
             asyncio.ensure_future(self._receive_message(return_value=False))
@@ -77,10 +102,10 @@ class WebSocket_TD:
         """        
 
         # Grab the login info.
-        login_request = self.log_data_url[0]
+        login_request = self.log_data_url['login']
 
         # Create a connection.
-        self.connection = await websockets.client.connect(self.log_data_url[2])
+        self.connection = await websockets.client.connect(self.log_data_url['uri'])
 
         # check it before sending it back.
         if await self._check_connection() and pipeline_start == True:
@@ -158,6 +183,10 @@ class WebSocket_TD:
                     for single in message_decoded["data"][0]['content']:
                         if single['3'] > 1000:
                             print(single['3'])
+
+                #returning when it's true, usually if its a pipeline
+                if return_value:
+                        return message_decoded
 
             except websockets.exceptions.ConnectionClosed:
 
