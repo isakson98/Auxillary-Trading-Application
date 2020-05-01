@@ -50,46 +50,88 @@ class TD_API_Calls:
         endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)   
 
         payload = {
-        #reward
-        "orderStrategyType": "OCO",
-        "childOrderStrategies": [
-            {
-            "orderType": "LIMIT",
-            "session": "NORMAL",
-            "price": risk_reward_dict['reward'], 
-            "duration": "DAY",
-            "orderStrategyType": "SINGLE",
-            "orderLegCollection": [
+    
+            "orderStrategyType": "OCO",
+            "childOrderStrategies": [
                 {
-                "instruction": "SELL",
-                "quantity": risk_reward_dict['shares'] ,
-                "instrument": {
-                    "symbol": risk_reward_dict['ticker'],
-                    "assetType": "EQUITY"
-                }
+                    "orderType": "LIMIT",
+                    "session": "NORMAL",
+                    "price": 45.97,
+                    "duration": "DAY",
+                    "orderStrategyType": "SINGLE",
+                    "orderLegCollection": [
+                        {
+                            "instruction": "SELL",
+                            "quantity": 2,
+                            "instrument": {
+                                "symbol": "MSFT",
+                                "assetType": "EQUITY"
+                            }
+                        }
+                    ]
+                },
+                {
+                    
+                    "orderType": "STOP_LIMIT",
+                    "session": "NORMAL",
+                    "price": 37.00,
+                    "stopPrice": 35.00,
+                    "duration": "DAY",
+                    "orderStrategyType": "SINGLE",
+                    "orderLegCollection": [
+                        {
+                            "instruction": "SELL",
+                            "quantity": 2,
+                            "instrument": {
+                                "symbol": "MSFT",
+                                "assetType": "EQUITY"
+                            }
+                        }
+                    ]
                 }
             ]
-            },
-        #risk
-            {
-            "orderType": "STOP",
-            "session": "NORMAL",
-            "stopPrice": risk_reward_dict['risk'],
-            "duration": "DAY",
-            "orderStrategyType": "SINGLE",
-            "orderLegCollection": [
-                {
-                "instruction": "SELL",
-                "quantity": risk_reward_dict['shares'] ,
-                "instrument": {
-                    "symbol": risk_reward_dict['ticker'],
-                    "assetType": "EQUITY"
-                }
-                }
-            ]
-            }
-        ]
         }
+
+        # #reward
+        # "orderStrategyType": "OCO",
+        # "childOrderStrategies": [
+        #     {
+        #     "orderType": "LIMIT",
+        #     "session": "NORMAL",
+        #     "price": risk_reward_dict['reward'], 
+        #     "duration": "DAY",
+        #     "orderStrategyType": "SINGLE",
+        #     "orderLegCollection": [
+        #         {
+        #         "instruction": "SELL",
+        #         "quantity": risk_reward_dict['shares'] ,
+        #         "instrument": {
+        #             "symbol": risk_reward_dict['ticker'],
+        #             "assetType": "EQUITY"
+        #         }
+        #         }
+        #     ]
+        #     },
+        # #risk
+        #     {
+        #     "orderType": "STOP",
+        #     "session": "NORMAL",
+        #     "stopPrice": risk_reward_dict['risk'],
+        #     "duration": "DAY",
+        #     "orderStrategyType": "SINGLE",
+        #     "orderLegCollection": [
+        #         {
+        #         "instruction": "SELL",
+        #         "quantity": risk_reward_dict['shares'] ,
+        #         "instrument": {
+        #             "symbol": risk_reward_dict['ticker'],
+        #             "assetType": "EQUITY"
+        #         }
+        #         }
+        #     ]
+        #     }
+        # ]
+        # }
 
         #checking if the token is still valid
         try:

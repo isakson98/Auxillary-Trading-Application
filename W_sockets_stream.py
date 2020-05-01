@@ -22,8 +22,7 @@ class WebSocket_TD:
             self.loop = asyncio.get_event_loop()
         except websockets.WebSocketException:
             self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-
+            asyncio.set_event_loop(self.loop)       
 
     #pipeline functions
     async def start_pipeline(self) -> dict:     
@@ -146,6 +145,38 @@ class WebSocket_TD:
 
         # stopping the loop after this function
         self.loop.stop()
+        
+    # async def unsubscribe(self, service: str) -> dict:
+    #     """Unsubscribe from a service.
+    #     Arguments:
+    #     ----
+    #     service {str} -- The name of the service, to unsubscribe from. For example,
+    #         "LEVELONE_FUTURES" or "QUOTES".
+    #     Returns:
+    #     ----
+    #     dict -- A message from the websocket specifiying whether the unsubscribe command
+    #         was successful.
+    #     """
+
+    #     # self.unsubscribe_count += 1
+
+    #     # service_count = len(self.data_requests['requests']) + self.unsubscribe_count
+        
+    #     # request = {
+    #     #     "requests":[
+    #     #         {
+    #     #             "service": service.upper(), 
+    #     #             "requestid": service_count, 
+    #     #             "command": 'UNSUBS',
+    #     #             "account": self.user_principal_data['accounts'][0]['accountId'],
+    #     #             "source": self.user_principal_data['streamerInfo']['appId']
+    #     #         }
+    #     #     ]
+    #     # }
+
+    #     # await self._send_message(json.dumps(request))
+
+    #     # return await self._receive_message(return_value=True)
     
     async def _send_message(self, message: str):
         """Sends a message to webSocket server
@@ -179,7 +210,7 @@ class WebSocket_TD:
                
                 
                 if "data" in message_decoded:
-                    # format -> {'seq': 310, 'key': 'AAPL', '1': 1587759182311, '2': 282.96, '3': 76.0, '4': 124604}
+                    
                     for single in message_decoded["data"][0]['content']:
                         if single['3'] > 1000:
                             print(single['3'])
