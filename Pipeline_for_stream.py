@@ -1,6 +1,7 @@
 import asyncio
 import pprint
 from W_sockets_stream import WebSocket_TD
+import datetime
 
 # Data Pipeline function
 async def data_pipeline(ticker):
@@ -19,9 +20,16 @@ async def data_pipeline(ticker):
     Additionally, we can also see how to unsubscribe from a stream using logic and how
     to close the socket mid-stream.
     """
-
+    # streamer count
     data_response_count = 0
     heartbeat_response_count = 0
+
+    #data parsing
+    new_minute = True
+    new_time = None
+    old_time = None
+    new_volume = None
+    minute_volume = None
 
     WB_TD_client = WebSocket_TD(ticker)
 
@@ -33,42 +41,52 @@ async def data_pipeline(ticker):
         try:
             # Start the Pipeline.
             data = await WB_TD_client.start_pipeline()
+
+            # i can have functions to show what exactly i want to do with streaming data
         
             # Grab the Data, if there was any. Remember not every message will have `data.`
             if 'data' in data:
+                print(data)
+                #getting the current minute
+                trans_timestamp = data['data'][0]['content'][0]['1'] 
+                
+                #converting to datetime object
+                transaction_time = datetime.datetime.fromtimestamp(trans_timestamp // 1000.0) # // -> int div
 
-                print('='*80)
-                # format -> {'seq': 310, 'key': 'AAPL', '1': 1587759182311, '2': 282.96, '3': 76.0, '4': 124604}
-                data_content = data['data'][0]['content']
-                pprint.pprint(data_content, indent=4)
+                new_time = transaction_time.minute 
+
+                new_volume = data['data'][0]['content'][0]['3']
+
+                # if times are equal, we are in the same minute
+                if new_time == old_time:
+                    minute_volume = minute_volume + new_volume
+
+                # renew the volume + update new time
+                else:
+                    #prev minute results
+                    print('='*80)
+                    print(minute_volume)
+                    minute_volume = new_volume
+                    old_time = new_time
+
 
                 # Here I can grab data as it comes in and do something with it.
-                if 'key' in data_content[0]:
-                    print('Here is my key: {}'.format(data_content[0]['key']))
+                if 'key' in data['data'][0]['content'][0]:
+                    print('Here is my key: {}'.format(data['data'][0]['content'][0]['key']))
 
                 print('-'*80)
                 data_response_count += 1
             
+
             # If we get a heartbeat notice, let's increment our counter.
             elif 'notify' in data:
                 print(data['notify'][0])
                 heartbeat_response_count += 1
 
-            # # Once we have 1 data responses, we can unsubscribe from a service.
-            # if data_response_count == 1:
-            #     unsub = await WB_TD_client.(service='LEVELONE_FUTURES')
-            #     data_response_count += 1
-            #     print('='*80)
-            #     print(unsub)
-            #     print('-'*80)
 
-            # Once we have 5 heartbeats, let's close the stream. Make sure to break the while loop.
-            # or else you will encounter an exception.
-            if heartbeat_response_count == 3:
-                await WB_TD_client.close_stream()
-                break
-        except:
+        except Exception as e:
             print("Breaking while loop")
+            print(e)
             await WB_TD_client.close_stream()
             break
             
@@ -78,10 +96,10 @@ async def close():
 
 
 print("Enter stock ticker to stream: ")
-ticker = input()
+# ticker = input()
 
 # Run the pipeline.
 try:
-    asyncio.run(data_pipeline(ticker))
+    asyncio.run(data_pipeline("TSLA"))
 except:
     print("Exited pipeline")

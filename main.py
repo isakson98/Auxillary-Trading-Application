@@ -310,8 +310,7 @@ while True:
 	print("[4] - Start cold entry")
 	print("[5] - See trending stocks") 
 	print("[6] - Run simulation model")
-	print("[10] - Find risk order ID")
-	print("[20] oco")
+	# print("[10] - Find risk order ID")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
 
@@ -332,9 +331,6 @@ while True:
 		model_init()
 	elif decision == '10':
 		find_risk_exit_order_id()
-	elif decision == '20':
-		order_dict = {'ticker' : 'CREX', 'shares' : 1, 'reward' : 10.00, 'risk': 0.5}
-		TD.sending_oco(order_dict)
 	elif decision == 'q':
 		quit(0)
 
