@@ -19,7 +19,7 @@ import winsound
 import pandas as pd
 import ta
 
-Money_to_Risk = 3
+Money_to_Risk = 1
 
 
 class Risk_Reward:

@@ -3,6 +3,8 @@ import pprint
 from W_sockets_stream import WebSocket_TD
 import datetime
 
+SHARES_TO_FILTER = 100 
+
 # Data Pipeline function
 async def data_pipeline(ticker):
     """
@@ -20,16 +22,23 @@ async def data_pipeline(ticker):
     Additionally, we can also see how to unsubscribe from a stream using logic and how
     to close the socket mid-stream.
     """
-    # streamer count
-    data_response_count = 0
-    heartbeat_response_count = 0
 
     #data parsing
-    new_minute = True
     new_time = None
     old_time = None
-    new_volume = None
-    minute_volume = None
+
+    new_volume = 0
+    up_volume = 0
+    down_volume = 0
+
+    new_tick = 0
+    old_tick = 0 # for comparing whether it's uptick or down tick
+
+    # to dispute times when transactions are of the same price
+    # in Ameritrade, current same price is green 
+    # if the last transaction != to the current price is green and vice versa (red) 
+    up_flag = None
+    down_flag = None
 
     WB_TD_client = WebSocket_TD(ticker)
 
@@ -46,42 +55,69 @@ async def data_pipeline(ticker):
         
             # Grab the Data, if there was any. Remember not every message will have `data.`
             if 'data' in data:
-                print(data)
-                #getting the current minute
-                trans_timestamp = data['data'][0]['content'][0]['1'] 
+
+                #sometimes data comes in a batch, have to do calculations for each transaction
+                for tick in data['data'][0]['content']:
+
+                    # parsing the variables out
+                    trans_timestamp = tick['1'] 
+                    new_tick = tick['2']
+                    new_volume = tick['3']
+
+                    # converting to datetime object
+                    transaction_time = datetime.datetime.fromtimestamp(trans_timestamp // 1000.0) # // -> int div
+                    new_time = transaction_time.minute 
+
+                    # renew the volume + update new time
+                    if new_time != old_time :
+                        #prev minute results
+                        print('='*80)
+                        
+                        print(old_time)
+                        # subtract to see whether more volume down on negative or positive candle
+                        print(up_volume - down_volume)
+
+                        print('='*80)
+                        # renew stats for a new minute
+                        up_volume = 0
+                        down_volume = 0
+                        old_time = new_time
+
+                    # if times are equal, we are in the same minute
                 
-                #converting to datetime object
-                transaction_time = datetime.datetime.fromtimestamp(trans_timestamp // 1000.0) # // -> int div
+                    if new_tick < old_tick :
+                        up_flag = False
 
-                new_time = transaction_time.minute 
+                    #if the time volume is high, it's part of the calculation 
+                    # if new price is higher, its an uptick
+                    if (new_tick > old_tick or up_flag) : 
 
-                new_volume = data['data'][0]['content'][0]['3']
+                        if new_volume >= SHARES_TO_FILTER:
+                            up_volume += new_volume
+                            print(new_tick, "  ", up_volume)
+                        
+                        up_flag = True
+                        down_flag = False
 
-                # if times are equal, we are in the same minute
-                if new_time == old_time:
-                    minute_volume = minute_volume + new_volume
+                    # if new price is lower, it's a downtick 
+                    elif (new_tick < old_tick or down_flag) :
 
-                # renew the volume + update new time
-                else:
-                    #prev minute results
-                    print('='*80)
-                    print(minute_volume)
-                    minute_volume = new_volume
-                    old_time = new_time
-
-
-                # Here I can grab data as it comes in and do something with it.
-                if 'key' in data['data'][0]['content'][0]:
-                    print('Here is my key: {}'.format(data['data'][0]['content'][0]['key']))
-
-                print('-'*80)
-                data_response_count += 1
-            
+                        if new_volume >= SHARES_TO_FILTER:
+                            down_volume += new_volume
+                            print(new_tick, "  ", -down_volume)
+                        
+                        up_flag = False
+                        down_flag = True
+                    
+                    # assign the price at which a new transaction went through as the old one
+                    # only if the two prices are different
+                    
+                    old_tick = new_tick
+                
 
             # If we get a heartbeat notice, let's increment our counter.
             elif 'notify' in data:
                 print(data['notify'][0])
-                heartbeat_response_count += 1
 
 
         except Exception as e:
@@ -100,6 +136,6 @@ print("Enter stock ticker to stream: ")
 
 # Run the pipeline.
 try:
-    asyncio.run(data_pipeline("TSLA"))
+    asyncio.run(data_pipeline("SPY"))
 except:
     print("Exited pipeline")
