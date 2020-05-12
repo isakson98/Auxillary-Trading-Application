@@ -12,8 +12,7 @@ This program allows me autonomously to:
 6) stream time&sales data to output total volume done on uptick and downtick within 1 minute increments
 
 
-![image](https://user-images.githubusercontent.com/43397175/81630679-3c2aa900-93d4-11ea-8a3a-0e6726fe9b66.png)
-
+![image](https://user-images.githubusercontent.com/43397175/81631660-582f4a00-93d6-11ea-956b-8427684ea4ca.png)
 
 
 Some of the pivotal libraries in this project: Selenium (+Splinter), TA, Pandas, Requests, Time, Async 
