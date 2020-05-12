@@ -3,7 +3,7 @@ import pprint
 from W_sockets_stream import WebSocket_TD
 import datetime
 
-SHARES_TO_FILTER = 100 
+SHARES_TO_FILTER = 1000 
 
 # Data Pipeline function
 async def data_pipeline(ticker):
@@ -28,7 +28,7 @@ async def data_pipeline(ticker):
     old_time = None
 
     new_volume = 0
-    up_volume = 0
+    up_volume = 1 #to avoid div by zero in the first rotation
     down_volume = 0
 
     new_tick = 0
@@ -75,7 +75,11 @@ async def data_pipeline(ticker):
                         
                         print(old_time)
                         # subtract to see whether more volume down on negative or positive candle
-                        print(up_volume - down_volume)
+                        difference = up_volume - down_volume
+                        print("Difference in volume   :", difference)
+                        
+                        percentage = round(difference / (up_volume + down_volume) * 100)
+                        print("Percentage of strength :",  percentage)
 
                         print('='*80)
                         # renew stats for a new minute
@@ -84,17 +88,14 @@ async def data_pipeline(ticker):
                         old_time = new_time
 
                     # if times are equal, we are in the same minute
-                
                     if new_tick < old_tick :
                         up_flag = False
 
-                    #if the time volume is high, it's part of the calculation 
                     # if new price is higher, its an uptick
                     if (new_tick > old_tick or up_flag) : 
 
                         if new_volume >= SHARES_TO_FILTER:
                             up_volume += new_volume
-                            print(new_tick, "  ", up_volume)
                         
                         up_flag = True
                         down_flag = False
@@ -104,14 +105,12 @@ async def data_pipeline(ticker):
 
                         if new_volume >= SHARES_TO_FILTER:
                             down_volume += new_volume
-                            print(new_tick, "  ", -down_volume)
                         
                         up_flag = False
                         down_flag = True
                     
                     # assign the price at which a new transaction went through as the old one
                     # only if the two prices are different
-                    
                     old_tick = new_tick
                 
 
@@ -132,10 +131,11 @@ async def close():
 
 
 print("Enter stock ticker to stream: ")
-# ticker = input()
+ticker = input()
+
 
 # Run the pipeline.
 try:
-    asyncio.run(data_pipeline("SPY"))
+    asyncio.run(data_pipeline(ticker))
 except:
     print("Exited pipeline")
