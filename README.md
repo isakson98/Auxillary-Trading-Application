@@ -12,7 +12,7 @@ This program allows me autonomously to:
 6) stream time&sales data to output total volume done on uptick and downtick within 1 minute increments
 
 
-![image](https://user-images.githubusercontent.com/43397175/79826642-4247df80-836a-11ea-83f7-a95572522bd9.png)
+![image](https://user-images.githubusercontent.com/43397175/81630679-3c2aa900-93d4-11ea-8a3a-0e6726fe9b66.png)
 
 
 
