@@ -209,11 +209,10 @@ class WebSocket_TD:
                 message_decoded = await self._parse_json_message(message=message)
                
                 
-                if "data" in message_decoded:
-                    
-                    for single in message_decoded["data"][0]['content']:
-                        if single['3'] > 1000:
-                            print(single['3'])
+                # if "data" in message_decoded:
+                #     for single in message_decoded["data"][0]['content']:
+                #         if single['3'] > 1000:
+                #             print(single['3'])
 
                 #returning when it's true, usually if its a pipeline
                 if return_value:

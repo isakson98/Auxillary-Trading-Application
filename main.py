@@ -310,7 +310,6 @@ while True:
 	print("[4] - Start cold entry")
 	print("[5] - See trending stocks") 
 	print("[6] - Run simulation model")
-	# print("[10] - Find risk order ID")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
 
@@ -333,6 +332,4 @@ while True:
 		find_risk_exit_order_id()
 	elif decision == 'q':
 		quit(0)
-
-
 
