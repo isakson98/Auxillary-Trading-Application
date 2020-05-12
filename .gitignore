@@ -1,0 +1,9 @@
+Config.py
+old_open_orders/*.txt
+.vscode/launch.json
+*.ipynb
+*.png
+test_file.py
+*.pyc
+debug.log
+objectives.txt

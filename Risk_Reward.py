@@ -19,20 +19,21 @@ import winsound
 import pandas as pd
 import ta
 
-Money_to_Risk = 3
+Money_to_Risk = 1
 
 
 class Risk_Reward:
 
 	def __init__(self):
-		self.open_order_info = {'time': 0, 'ticker' : 0, 'shares' : 0, 'price' : 0}
-		self.risk_reward_setup ={'risk': 0, 'reward' : 0, 'shares' : 0, 'ticker' : 0}
+		self.open_order_info = {'time': 0, 'ticker' : 0, 'shares' : 0, 'price' : 0, }
+		self.risk_reward_setup ={'risk': 0, 'current': 0, 'reward': 0, 'shares' : 0, 'ticker' : 0, 'time' : 0, 'result': 0}
 		self.five_min_data = None
 		self.one_min_data = None
 		self.data_pd = None
 		self.vwap_dict = None
 		self.spy_pd = None
 		self.spy_yest = None
+		self.pro_loss_list = []
 		
 
 	# saving opened orders into a file 
@@ -198,8 +199,8 @@ class Risk_Reward:
 		if simulation == 0:
 			self.data_pd = FH_N.one_min_data_csv(ticker)
 
-			# if the price has not reached 2X Reward, oversold != need to exit
-			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+			# if the price has not reached 1.8X Reward (for some leevay), oversold != need to exit
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward'] * 1.8:
 				return False
 
 			##RSI indicator -> very lagging, performs closer to reality 100 away from head
@@ -222,7 +223,7 @@ class Risk_Reward:
 		elif simulation == 1 and 'bb_bbh' not in self.data_pd.columns:
 
 			# if the price has not reached 2X Reward, oversold != need to exit
-			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward']:
+			if self.data_pd['Close'].iloc[a_iteration] < self.risk_reward_setup['reward'] * 1.8:
 				return False
 
 			indicator_bb = ta.volatility.BollingerBands(close=self.data_pd["Close"], n=7, ndev=2)
@@ -339,6 +340,19 @@ class Risk_Reward:
 			self.data_pd['VWAP'] = indicator_vwap.volume_weighted_average_price()
 	
 		###########################################################################################
+		# if there is content in this list, I will check if curren price has reached any of the r's of any of the variables
+		# consider those that will not be in 1pm ^
+		if self.pro_loss_list:
+			for setup in self.pro_loss_list:
+				# if i hit the stop loss
+				if setup['risk'] >= self.data_pd['Low'].iloc[a_iteration]:
+					#print(self.data_pd['Low'].iloc[a_iteration])
+					setup['result'] = -1
+				# if i hit 
+				elif setup['reward'] <= self.data_pd['High'].iloc[a_iteration]:
+					setup['result'] = 2
+
+
 		# calculating the conditions
 		# initizaliing variables that will be compared to
 		# i do not want a_iteration variable changed, so i reassigned it
@@ -505,7 +519,7 @@ class Risk_Reward:
 		#if current 5min low is below 20 ema, risk is low of 5 min
 		elif self.five_min_data['ema_20'].iloc[a_iteration] > self.five_min_data['Low'].iloc[a_iteration]:
 			risk = self.five_min_data['Low'].iloc[a_iteration] - 0.04
-			reward = abs(current_1_min - self.five_min_data['ema_8'].iloc[a_iteration]) * 2 + current_1_min
+			reward = abs(current_1_min - self.five_min_data['Low'].iloc[a_iteration]) * 2 + current_1_min
 
 		#in case 5 min is not overextended
 		else:
@@ -520,7 +534,14 @@ class Risk_Reward:
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(one_min_iteration)
-		print("R/R : ", self.risk_reward_setup, "| current price: ", current_1_min, "|", time_now) 
+		self.risk_reward_setup['time'] = time_now
+		self.risk_reward_setup['current'] = current_1_min
+
+		#if this is a simulation, i'll keep track of setups
+		if a_iteration != -1:
+			# adding new order info to a list to check later if it hits risk or reward
+			copy_r_r = self.risk_reward_setup
+			self.pro_loss_list.append(copy_r_r)
 
 		return True
 
@@ -577,5 +598,11 @@ class Risk_Reward:
 			#self.hot_exit(a_ticker, 1, start_time) # not calculating hot exit because I have not found it reliable enough to start using it.
 			self.cold_entry(a_ticker, 1, start_time)
 			start_time +=1
-	
+
+		for setup in self.pro_loss_list:
+			print("R/R : ", setup) 
+
+		#clear for the next ticker
+		self.pro_loss_list.clear()
+
 		return 0

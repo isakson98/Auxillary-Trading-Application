@@ -34,7 +34,7 @@ class Sentiment_Screener:
 	def authorize_stock_twit(self):
 
 		#create a new instance of the chrome browser
-		executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver_win32\chromedriver'}
+		executable_path = {'executable_path' : r'C:\Users\isaks\Desktop\chromedriver\chromedriver'}
 		browser = Browser('chrome', **executable_path, headless = True )
 
 		#running the first time to get the url of the 
