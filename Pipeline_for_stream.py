@@ -3,10 +3,10 @@ import pprint
 from W_sockets_stream import WebSocket_TD
 import datetime
 
-SHARES_TO_FILTER = 1000 
+SHARES_TO_FILTER = 1500 
 
 # Data Pipeline function
-async def data_pipeline(ticker):
+async def Data_pipeline(ticker):
     """
     Generally speaking, you will need to wrap the operations that process
     and handle the data inside an async function. The reason being is so
@@ -55,7 +55,7 @@ async def data_pipeline(ticker):
         
             # Grab the Data, if there was any. Remember not every message will have `data.`
             if 'data' in data:
-
+                # print(data['data'][0]['content'])
                 #sometimes data comes in a batch, have to do calculations for each transaction
                 for tick in data['data'][0]['content']:
 
@@ -71,7 +71,7 @@ async def data_pipeline(ticker):
                     # renew the volume + update new time
                     if new_time != old_time :
                         #prev minute results
-                        print('='*80)
+                        print('='*60)
                         
                         print(old_time)
                         # subtract to see whether more volume down on negative or positive candle
@@ -81,7 +81,6 @@ async def data_pipeline(ticker):
                         percentage = round(difference / (up_volume + down_volume) * 100)
                         print("Percentage of strength :",  percentage)
 
-                        print('='*80)
                         # renew stats for a new minute
                         up_volume = 0
                         down_volume = 0
@@ -96,6 +95,8 @@ async def data_pipeline(ticker):
 
                         if new_volume >= SHARES_TO_FILTER:
                             up_volume += new_volume
+                            # print('='*60)
+                            # print(new_tick, " " , new_volume)
                         
                         up_flag = True
                         down_flag = False
@@ -105,6 +106,8 @@ async def data_pipeline(ticker):
 
                         if new_volume >= SHARES_TO_FILTER:
                             down_volume += new_volume
+                            # print('='*60)
+                            # print(new_tick ," ", -new_volume)
                         
                         up_flag = False
                         down_flag = True
@@ -112,11 +115,9 @@ async def data_pipeline(ticker):
                     # assign the price at which a new transaction went through as the old one
                     # only if the two prices are different
                     old_tick = new_tick
-                
 
-            # If we get a heartbeat notice, let's increment our counter.
-            elif 'notify' in data:
-                print(data['notify'][0])
+            else:
+                print(data)
 
 
         except Exception as e:
@@ -124,18 +125,14 @@ async def data_pipeline(ticker):
             print(e)
             await WB_TD_client.close_stream()
             break
-            
 
-async def close():
-    await asyncio.sleep(1)
+def Pipeline_init():
 
+    print("Enter stock ticker to stream: ")
+    ticker = input()
 
-print("Enter stock ticker to stream: ")
-ticker = input()
-
-
-# Run the pipeline.
-try:
-    asyncio.run(data_pipeline(ticker))
-except:
-    print("Exited pipeline")
+    # Run the pipeline.
+    try:
+        asyncio.run(Data_pipeline(ticker))
+    except:
+        print("Exited pipeline")
