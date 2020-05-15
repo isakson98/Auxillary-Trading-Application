@@ -28,7 +28,7 @@ def simulation_model(num_days):
 
         for name in row:
             
-            if name != row[0] and (name != 'None'or name != 'NONE'):
+            if name != row[0] and (name != 'None'and name != 'NONE'):
                 name_of_row = 'ticker_' + str(ticker)
                 print(row['date'], row[name_of_row])
                 fox.run_through_model(row[name_of_row], row['date'])

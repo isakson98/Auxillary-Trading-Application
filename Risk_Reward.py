@@ -345,11 +345,11 @@ class Risk_Reward:
 		if self.pro_loss_list:
 			for setup in self.pro_loss_list:
 				# if i hit the stop loss
-				if setup['risk'] >= self.data_pd['Low'].iloc[a_iteration]:
-					#print(self.data_pd['Low'].iloc[a_iteration])
+				if setup['risk'] >= self.data_pd['Low'].iloc[a_iteration] and setup['result'] == 0:
+					# only update the value if it has been unitialized. Otherwise the results will always be what happened last
 					setup['result'] = -1
 				# if i hit 
-				elif setup['reward'] <= self.data_pd['High'].iloc[a_iteration]:
+				elif setup['reward'] <= self.data_pd['High'].iloc[a_iteration] and setup['result'] == 0:
 					setup['result'] = 2
 
 
@@ -529,25 +529,25 @@ class Risk_Reward:
 		shares = round(Money_to_Risk / (current_1_min - risk), 2)
 
 		self.risk_reward_setup ={'risk': round(risk, 2),
-								 'reward' : round(reward, 2) , 
+								 'reward' : round(reward, 2), 
 								 'shares' : shares, 
 								 'ticker' : self.open_order_info['ticker']}
 
 		time_now = self.sec_into_time_convert(one_min_iteration)
 		self.risk_reward_setup['time'] = time_now
 		self.risk_reward_setup['current'] = current_1_min
+		self.risk_reward_setup['result'] = 0
 
 		#if this is a simulation, i'll keep track of setups
 		if a_iteration != -1:
 			# adding new order info to a list to check later if it hits risk or reward
-			copy_r_r = self.risk_reward_setup
-			self.pro_loss_list.append(copy_r_r)
+			# copy_r_r = self.risk_reward_setup
+			self.pro_loss_list.append(self.risk_reward_setup)
 
 		return True
 
 
 
-	#not safe against DAY TIME SAVINGS and HALTS ??
 	#this function iterates through every minute of a specified stock between 9:30 (+some pre market) and 13:00 on a specified date
 	#and prints out cold_entry, stop loss, target and first overbought indicator in a dataframe, which is then graphed out
 	#this is a powerful function because it should accomodate every strategy I map out for any stock
