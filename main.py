@@ -2,8 +2,10 @@ from Risk_Reward import Risk_Reward
 from TD_API_Calls import TD_API_Calls #solved = TD_API only called from this file to reduce the need for selenium to run twice
 from Sentiment_Screener import Sentiment_Screener
 from Simulation_Model import simulation_model
+from Pipeline_for_stream import Data_pipeline
 from datetime import datetime
 from dateutil import parser
+import asyncio
 import time
 
 #This file controls the user interface and makes necessary calls to Risk_Reward and TD_API_Calls
@@ -297,6 +299,17 @@ def model_init():
 		rows = input()
 		simulation_model(int(rows))
 
+def Pipeline_init():
+
+	print("Enter stock ticker to stream: ")
+	ticker = input()
+
+	# Run the pipeline.
+	try:
+		asyncio.run(Data_pipeline(ticker))
+	except:
+		print("Exited pipeline")
+
 
 
 
@@ -310,6 +323,7 @@ while True:
 	print("[4] - Start cold entry")
 	print("[5] - See trending stocks") 
 	print("[6] - Run simulation model")
+	print("[7] - Start volume indicator")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
 
@@ -328,6 +342,8 @@ while True:
 		repeat_trending_stocks()
 	elif decision == '6':
 		model_init()
+	elif decision == '7': #taken directly from the file 
+		Pipeline_init()
 	elif decision == '10':
 		find_risk_exit_order_id()
 	elif decision == 'q':
