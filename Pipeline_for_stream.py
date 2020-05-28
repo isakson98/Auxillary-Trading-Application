@@ -29,7 +29,7 @@ async def Data_pipeline(ticker):
 
     new_volume = 0
     up_volume = 1 #to avoid div by zero in the first rotation
-    down_volume = 0
+    down_volume = 1
 
     new_tick = 0
     old_tick = 0 # for comparing whether it's uptick or down tick
@@ -82,8 +82,8 @@ async def Data_pipeline(ticker):
                         print("Percentage of strength :",  percentage)
 
                         # renew stats for a new minute
-                        up_volume = 0
-                        down_volume = 0
+                        up_volume = 1
+                        down_volume = 1
                         old_time = new_time
 
                     # if times are equal, we are in the same minute

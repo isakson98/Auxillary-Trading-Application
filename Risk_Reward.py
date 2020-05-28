@@ -540,8 +540,6 @@ class Risk_Reward:
 
 		#if this is a simulation, i'll keep track of setups
 		if a_iteration != -1:
-			# adding new order info to a list to check later if it hits risk or reward
-			# copy_r_r = self.risk_reward_setup
 			self.pro_loss_list.append(self.risk_reward_setup)
 
 		return True

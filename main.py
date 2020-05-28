@@ -212,9 +212,6 @@ def start_cold_entry():
 
 	print("Write a stock to trade in UPPER case: ")
 	name_of_stock = input()
-	# ^ have a function that will upper case the value
-	#name_of_stock = name_of_stock.isupper()
-
 	
 	# want to starts reading data 6 seconds after new candle forms,
 	# as that is when my data provider creates previous candle's information 
@@ -237,9 +234,13 @@ def start_cold_entry():
 	
 	
 	#part of sending the order
-	#final_r_r = fox.risk_reward_setup
+	final_r_r = fox.risk_reward_setup
+
+	#sending entry order
+	TD.sending_cold_ENTRY_order(final_r_r)
+
 	#sending a 1:2 R/R
-	#TD.sending_oco(final_r_r) not ready yet to be implemented
+	TD.sending_oco(final_r_r) 
 
 	return 0
 
