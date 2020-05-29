@@ -305,9 +305,10 @@ def Pipeline_init():
 	print("Enter stock ticker to stream: ")
 	ticker = input()
 
+	cred = TD.get_cred(ticker)
 	# Run the pipeline.
 	try:
-		asyncio.run(Data_pipeline(ticker))
+		asyncio.run(Data_pipeline(ticker, cred))
 	except:
 		print("Exited pipeline")
 

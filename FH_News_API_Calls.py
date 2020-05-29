@@ -191,8 +191,6 @@ def prev_day_data(open_order_info , now = datetime.now()):
 		# a holiday on monday, so get data from thursday
 		if datetime_now ==  datetime(2020, 4, 13, 9, 30, 0):
 			timestamp -= 86400 # for holidays # temp
-	elif (datetime_now.isoweekday() == 2):	
-		timestamp -= 259200 # subbing two days to account for saturday and sunday 
 
 	#sunday
 	elif (datetime_now.isoweekday() == 7):

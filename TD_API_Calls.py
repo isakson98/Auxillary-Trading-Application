@@ -385,7 +385,7 @@ class TD_API_Calls:
 
 
         try:
-            content = requests.get(url = endpoint, headers = header)
+            content = requests.get(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError : #as e before this
             print("Token timed out -> obtaining a new one")
