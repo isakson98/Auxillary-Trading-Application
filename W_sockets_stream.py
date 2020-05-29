@@ -11,10 +11,9 @@ import datetime
 
 class WebSocket_TD:
 
-    def __init__(self, a_ticker):
+    def __init__(self, a_ticker, a_cred):
         #getting login, data info, and url from main TD class
-        TD_client = TD_API_Calls()
-        self.log_data_url = TD_client.get_cred(a_ticker)
+        self.log_data_url = a_cred 
         self.connection: websockets.WebSocketClientProtocol = None
 
         #either get an event loop (which stores coroutines to switch beteween) or create a new one

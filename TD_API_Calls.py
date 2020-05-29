@@ -118,7 +118,7 @@ class TD_API_Calls:
         header = {'Authorization' : "Bearer {}".format(self.access_token),
                 "Content-Type" : "application/json"}
 
-        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/savedorders".format(account_number)  
+        endpoint = r"https://api.tdameritrade.com/v1/accounts/{}/orders".format(account_number)  
 
         payload = {
             "orderType": "STOP",
@@ -385,7 +385,7 @@ class TD_API_Calls:
 
 
         try:
-            content = requests.get(url = endpoint, headers = header)
+            content = requests.get(url = endpoint, params = payload, headers = header)
             content.raise_for_status()
         except requests.HTTPError : #as e before this
             print("Token timed out -> obtaining a new one")

@@ -6,7 +6,7 @@ import datetime
 SHARES_TO_FILTER = 1500 
 
 # Data Pipeline function
-async def Data_pipeline(ticker):
+async def Data_pipeline(a_ticker, a_cred):
     """
     Generally speaking, you will need to wrap the operations that process
     and handle the data inside an async function. The reason being is so
@@ -29,7 +29,7 @@ async def Data_pipeline(ticker):
 
     new_volume = 0
     up_volume = 1 #to avoid div by zero in the first rotation
-    down_volume = 0
+    down_volume = 1
 
     new_tick = 0
     old_tick = 0 # for comparing whether it's uptick or down tick
@@ -40,7 +40,7 @@ async def Data_pipeline(ticker):
     up_flag = None
     down_flag = None
 
-    WB_TD_client = WebSocket_TD(ticker)
+    WB_TD_client = WebSocket_TD(a_ticker, a_cred)
 
     # Build the Pipeline.
     await WB_TD_client.build_pipeline()
@@ -82,8 +82,8 @@ async def Data_pipeline(ticker):
                         print("Percentage of strength :",  percentage)
 
                         # renew stats for a new minute
-                        up_volume = 0
-                        down_volume = 0
+                        up_volume = 1
+                        down_volume = 1
                         old_time = new_time
 
                     # if times are equal, we are in the same minute
@@ -125,14 +125,3 @@ async def Data_pipeline(ticker):
             print(e)
             await WB_TD_client.close_stream()
             break
-
-def Pipeline_init():
-
-    print("Enter stock ticker to stream: ")
-    ticker = input()
-
-    # Run the pipeline.
-    try:
-        asyncio.run(Data_pipeline(ticker))
-    except:
-        print("Exited pipeline")
