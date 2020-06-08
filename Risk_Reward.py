@@ -166,7 +166,7 @@ class Risk_Reward:
 
 		#r/r
 		risk = round(lowest_after_highest - 0.03, 2)
-		reward = round(((test_high - risk) * 2) + test_high, 2)
+		reward = round(((test_high - risk) * 2.5) + test_high, 2)
 
 		self.risk_reward_setup = {'risk' : risk, 
 									'reward' : reward, 
