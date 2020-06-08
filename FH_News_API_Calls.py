@@ -204,6 +204,8 @@ def prev_day_data(open_order_info , now = datetime.now()):
 	#otherwise it's realtime
 	else:
 		json_now = time.time()
+		json_now = round(json_now) # rounding needed because time() gives number with big decimal value
+
 		
 
 	payload = { 'symbol' : open_order_info,
@@ -223,7 +225,7 @@ def prev_day_data(open_order_info , now = datetime.now()):
 	try:
 		time_of_last_min = int(day['t'].index(timestamp))
 	except:
-		print("returned")
+		# print("returned")
 		return
 
 	# a lof of data is returning for a whole month for some reason,
