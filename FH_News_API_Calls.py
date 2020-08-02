@@ -211,8 +211,8 @@ def prev_day_data(open_order_info , now = datetime.now()):
 	payload = { 'symbol' : open_order_info,
 			'resolution' : '60',
 			'token' : finn_hub,
-			'to' : json_now, 
-			'from' : timestamp 
+			'to' : round(json_now), 
+			'from' : round(timestamp) 
 	}
 	content = requests.get(url = endpoint, params = payload)
 	

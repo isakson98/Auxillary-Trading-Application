@@ -125,8 +125,16 @@ class Risk_Reward:
 		prev_five_min = self.five_min_data['l'][time_of_last_5min - 1]          
 
 		#compare the two 
-		five_min_stop_loss = current_five_min - 0.03 if current_five_min < prev_five_min else prev_five_min -0.03
-		target = round((self.open_order_info['price'] - 0.03 + (self.open_order_info['price'] - five_min_stop_loss) * 1.9), 2)
+		five_min_stop_loss = current_five_min if current_five_min < prev_five_min else prev_five_min 
+
+		#half the distance between current and 5 min low
+		range_five = (self.open_order_info['price'] - five_min_stop_loss - 0.03) / 2 
+
+		#raising the stop loss by half
+		five_min_stop_loss = five_min_stop_loss + range_five - 0.03
+
+		#calculate target value
+		target = round((range_five * 4.5 + self.open_order_info['price']), 2)
 
 		self.risk_reward_setup = {'risk' : round(five_min_stop_loss, 2),
 									'reward' : target, 
@@ -135,6 +143,7 @@ class Risk_Reward:
 
 		print("Calculated 5 min R/R:  ",  self.risk_reward_setup)
 		return self.risk_reward_setup
+
 
 
 	# for manually entered trades
@@ -557,6 +566,7 @@ class Risk_Reward:
 		dates = pd.to_datetime([a_date])
 		second = (dates - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s') 
 		new_time = second[0] + 48600
+		new_time = round(new_time)
 
 		# only going in if this is the first run during executable
 		# or a new date is different from the one that was tested before
