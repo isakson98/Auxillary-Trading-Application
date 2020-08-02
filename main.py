@@ -3,13 +3,13 @@ from TD_API_Calls import TD_API_Calls #solved = TD_API only called from this fil
 from Sentiment_Screener import Sentiment_Screener
 from Simulation_Model import simulation_model
 from Pipeline_for_stream import Data_pipeline
+from Pipeline_for_stream_volume_spurt import Data_pipeline_SPURT
 from datetime import datetime
 from dateutil import parser
 import asyncio
 import time
 
 #This file controls the user interface and makes necessary calls to Risk_Reward and TD_API_Calls
-
 fox = Risk_Reward()
 TD = TD_API_Calls()
 sent = Sentiment_Screener()
@@ -312,6 +312,18 @@ def Pipeline_init():
 	except:
 		print("Exited pipeline")
 
+def Pipeline_init_spurt():
+
+	print("Enter stock ticker to stream: ")
+	ticker = input()
+
+	cred = TD.get_cred(ticker)
+	# Run the pipeline.
+	try:
+		asyncio.run(Data_pipeline_SPURT(ticker, cred))
+	except:
+		print("Exited pipeline")
+
 
 
 
@@ -326,6 +338,7 @@ while True:
 	print("[5] - See trending stocks") 
 	print("[6] - Run simulation model")
 	print("[7] - Start volume indicator")
+	print("[8] - Start volume SPURT indicator")
 	print("[q] - Quit the program")
 	print('--------------------------------------')
 
@@ -346,6 +359,8 @@ while True:
 		model_init()
 	elif decision == '7': #taken directly from the file 
 		Pipeline_init()
+	elif decision == '8': 
+		Pipeline_init_spurt()
 	elif decision == '10':
 		find_risk_exit_order_id()
 	elif decision == 'q':
