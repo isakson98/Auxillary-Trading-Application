@@ -1,5 +1,5 @@
 from Risk_Reward import Risk_Reward 
-from TD_API_Calls import TD_API_Calls #solved = TD_API only called from this file to reduce the need for selenium to run twice
+from TD_API_Calls import TD_API_Calls
 from Sentiment_Screener import Sentiment_Screener
 from Simulation_Model import simulation_model
 from Pipeline_for_stream import Data_pipeline
@@ -24,7 +24,7 @@ def one_r_two_r_exit_placement():
 	stock_ticker = None
 	try:
 		while True:
-			history_orders = TD.retrieve_orders()
+			history_orders = TD.query_real_orders()
 			stock_ticker = fox.checking_opening_positions(history_orders)
 			if stock_ticker != "None":
 				break
@@ -65,16 +65,16 @@ def check_opened_orders():
 	##retrieve in a way that the order id can be read (maybe multiple orders deleted at once)
 	##so the can be deleted ( call check_opened_orders in the delete function)
 	##query all saved orders and then delete one of them
-	data = TD.query_saved_orders()
+	data = TD.query_real_orders()
 
 	#order_id = data[0]['savedOrderId']
 	collection_of_orders = []
 	for order in data:
-		order_data = { 'OrderId' : order['savedOrderId'], #change this temp 
+		order_data = { 'OrderId' : order['orderId'], #change this temp 
 						'symbol' : order['orderLegCollection'][0]['instrument']['symbol'],
 						'instruction': order['orderLegCollection'][0]['instruction'],
 						'quantity' : order['orderLegCollection'][0]['quantity'],
-						'time' : order['savedTime']} #time
+						'time' : order['enteredTime']} #time
 			
 		collection_of_orders.append(order_data)
 		
@@ -88,7 +88,7 @@ def check_opened_orders():
 	date= date.replace(hour = est_hour)
 
 	iteration = 1
-	print("Opened Orders: ")
+	print("Today's Orders: ")
 	for order in collection_of_orders:
 		print(iteration,"->", order['symbol'], order['quantity'], order['instruction'], date)
 		iteration +=1
@@ -132,7 +132,7 @@ def start_hot_exit(token):
 		if token == 0:
 			##find a placed order first 
 			while True:
-				history_orders = TD.retrieve_orders()
+				history_orders = TD.query_real_orders()
 				stock_ticker = fox.checking_opening_positions(history_orders)
 				if stock_ticker != "None":
 					break
@@ -305,10 +305,8 @@ def Pipeline_init():
 	print("Enter stock ticker to stream: ")
 	ticker = input()
 
-	cred = TD.get_cred(ticker)
-	# Run the pipeline.
 	try:
-		asyncio.run(Data_pipeline(ticker, cred))
+		asyncio.run(Data_pipeline(ticker, TD))
 	except:
 		print("Exited pipeline")
 
@@ -317,10 +315,9 @@ def Pipeline_init_spurt():
 	print("Enter stock ticker to stream: ")
 	ticker = input()
 
-	cred = TD.get_cred(ticker)
 	# Run the pipeline.
 	try:
-		asyncio.run(Data_pipeline_SPURT(ticker, cred))
+		asyncio.run(Data_pipeline_SPURT(ticker, TD))
 	except:
 		print("Exited pipeline")
 
@@ -353,7 +350,7 @@ while True:
 		start_hot_exit(0)
 	elif decision == '4':
 		start_cold_entry()
-	elif decision == '5':
+	if decision == '5':
 		repeat_trending_stocks()
 	elif decision == '6':
 		model_init()
