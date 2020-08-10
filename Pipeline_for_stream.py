@@ -1,12 +1,10 @@
 import asyncio
-import pprint
-from W_sockets_stream import WebSocket_TD
 import datetime
-
+from td.client import TDClient
 SHARES_TO_FILTER = 1500 
 
 # Data Pipeline function
-async def Data_pipeline(a_ticker, a_cred):
+async def Data_pipeline(a_ticker, TD_session):
     """
     Generally speaking, you will need to wrap the operations that process
     and handle the data inside an async function. The reason being is so
@@ -40,16 +38,16 @@ async def Data_pipeline(a_ticker, a_cred):
     up_flag = None
     down_flag = None
 
-    WB_TD_client = WebSocket_TD(a_ticker, a_cred)
+    TDStreamingClient = TD_session.get_cred(a_ticker)
 
     # Build the Pipeline.
-    await WB_TD_client.build_pipeline()
+    await TDStreamingClient.build_pipeline()
 
     # Keep going as long as we can recieve data.
     while True:
         try:
             # Start the Pipeline.
-            data = await WB_TD_client.start_pipeline()
+            data = await TDStreamingClient.start_pipeline()
 
             # i can have functions to show what exactly i want to do with streaming data
         
@@ -123,5 +121,5 @@ async def Data_pipeline(a_ticker, a_cred):
         except Exception as e:
             print("Breaking while loop")
             print(e)
-            await WB_TD_client.close_stream()
+            await TDStreamingClient.close_stream()
             break

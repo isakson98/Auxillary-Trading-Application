@@ -9,7 +9,7 @@
 # 4. It is also capable of running simulations on intraday basis if ticker and date are specified
 
 import FH_News_API_Calls as FH_N
-from TD_API_Calls import TD_price_history
+from TD_API_Calls import TD_API_Calls
 from datetime import datetime
 from dateutil import parser
 import time 
@@ -34,6 +34,7 @@ class Risk_Reward:
 		self.spy_pd = None
 		self.spy_yest = None
 		self.pro_loss_list = []
+		self.TD_Data = TD_API_Calls()
 		
 
 	# saving opened orders into a file 
@@ -575,7 +576,7 @@ class Risk_Reward:
 			spy_dict = FH_N.prev_day_data("SPY", new_time)
 			self.spy_yest = spy_dict['prev']
 			#getting new dataframe
-			self.spy_pd = TD_price_history("SPY", new_time, 1)
+			self.spy_pd = self.TD_Data.TD_price_history("SPY", new_time, 1)
 
 		
 		#adds 9:30 hours to the date
@@ -584,9 +585,9 @@ class Risk_Reward:
 	
 
 		#used for entry calculation
-		self.data_pd = TD_price_history(a_ticker, new_time, 1)
+		self.data_pd = self.TD_Data.TD_price_history(a_ticker, new_time, 1)
 		#used for stop loss calculation 
-		self.five_min_data = TD_price_history(a_ticker, new_time, 5)
+		self.five_min_data = self.TD_Data.TD_price_history(a_ticker, new_time, 5)
 
 		
 		#adding the four hour difference cause UNIX in GMT and + 9:30 hours to the open
